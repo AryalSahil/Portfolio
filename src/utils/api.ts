@@ -60,8 +60,93 @@ export interface SafeResponse<T> {
 }
 
 /**
+ * Safely extracts a clean, human-readable error message from any error object,
+ * string, or response payload. Completely eliminates `[object Object]` displays.
+ */
+export function extractErrorMessage(err: unknown, fallback = 'An unexpected error occurred. Please try again.'): string {
+  if (!err) return fallback;
+
+  // String handling
+  if (typeof err === 'string') {
+    const trimmed = err.trim();
+    if (!trimmed || trimmed === '[object Object]' || trimmed.toLowerCase() === 'error') {
+      return fallback;
+    }
+    // Check if the string itself is stringified JSON e.g. {"error":"..."}
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return extractErrorMessage(parsed, fallback);
+      } catch {
+        // Not valid JSON, return original string
+      }
+    }
+    return trimmed;
+  }
+
+  // Error instance handling
+  if (err instanceof Error) {
+    if (err.message && err.message !== '[object Object]' && err.message.trim() !== '') {
+      return extractErrorMessage(err.message, fallback);
+    }
+    if ((err as any).error) return extractErrorMessage((err as any).error, fallback);
+    if ((err as any).data) return extractErrorMessage((err as any).data, fallback);
+    if ((err as any).response) return extractErrorMessage((err as any).response, fallback);
+    return fallback;
+  }
+
+  // Object handling (e.g. { error: { message: "...", code: 401 } } or { error: "..." } or { message: "..." })
+  if (typeof err === 'object') {
+    const record = err as Record<string, any>;
+
+    // Nested error object (common in GCP / Cloud Run responses: { error: { message: "...", code: 401 } })
+    if (record.error && typeof record.error === 'object') {
+      const nested = extractErrorMessage(record.error, '');
+      if (nested && nested !== '[object Object]') return nested;
+    }
+
+    if (typeof record.error === 'string' && record.error !== '[object Object]' && record.error.trim()) {
+      return extractErrorMessage(record.error, fallback);
+    }
+    if (typeof record.message === 'string' && record.message !== '[object Object]' && record.message.trim()) {
+      return extractErrorMessage(record.message, fallback);
+    }
+    if (typeof record.msg === 'string' && record.msg !== '[object Object]' && record.msg.trim()) {
+      return extractErrorMessage(record.msg, fallback);
+    }
+    if (typeof record.detail === 'string' && record.detail !== '[object Object]' && record.detail.trim()) {
+      return extractErrorMessage(record.detail, fallback);
+    }
+    if (typeof record.details === 'string' && record.details !== '[object Object]' && record.details.trim()) {
+      return extractErrorMessage(record.details, fallback);
+    }
+    if (typeof record.description === 'string' && record.description !== '[object Object]' && record.description.trim()) {
+      return extractErrorMessage(record.description, fallback);
+    }
+
+    // Array of errors e.g. { errors: [{ message: "..." }] }
+    if (Array.isArray(record.errors) && record.errors.length > 0) {
+      const first = extractErrorMessage(record.errors[0], '');
+      if (first && first !== '[object Object]') return first;
+    }
+
+    if (record.data && typeof record.data === 'object') {
+      const dataMsg = extractErrorMessage(record.data, '');
+      if (dataMsg && dataMsg !== '[object Object]') return dataMsg;
+    }
+
+    if (typeof record.statusText === 'string' && record.statusText.trim()) {
+      return record.statusText;
+    }
+  }
+
+  return fallback;
+}
+
+/**
  * Safely parse API responses to prevent `Unexpected token 'T', "The page c"... is not valid JSON`
- * when receiving HTML or plain-text error pages from hosting platforms or reverse proxies.
+ * when receiving HTML or plain-text error pages from hosting platforms or reverse proxies,
+ * and guarantees that parsed.error is always a clean human-readable string (never `[object Object]`).
  */
 export async function safeJsonResponse<T = any>(res: Response): Promise<SafeResponse<T>> {
   const contentType = res.headers.get('content-type') || '';
@@ -75,7 +160,7 @@ export async function safeJsonResponse<T = any>(res: Response): Promise<SafeResp
           ok: false,
           status: res.status,
           data,
-          error: data?.error || data?.message || `Request failed with status ${res.status}`,
+          error: extractErrorMessage(data, `Request failed with status ${res.status}`),
         };
       }
       return { ok: true, status: res.status, data, error: null };
@@ -95,7 +180,7 @@ export async function safeJsonResponse<T = any>(res: Response): Promise<SafeResp
           ok: false,
           status: res.status,
           data: parsed,
-          error: parsed?.error || parsed?.message || `Request failed with status ${res.status}`,
+          error: extractErrorMessage(parsed, `Request failed with status ${res.status}`),
         };
       }
       return { ok: true, status: res.status, data: parsed, error: null };
@@ -127,4 +212,5 @@ export async function safeJsonResponse<T = any>(res: Response): Promise<SafeResp
     return { ok: false, status: res.status, data: null, error: 'Unable to process server response.' };
   }
 }
+
 

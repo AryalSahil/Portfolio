@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AdminProfile } from '../../types/portfolio.js';
 import { Shield, KeyRound, CheckCircle2, AlertCircle, Loader2, Save, UserCheck } from 'lucide-react';
-import { authFetch } from '../../utils/api.js';
+import { authFetch, safeJsonResponse, extractErrorMessage } from '../../utils/api.js';
 
 interface AdminSecurityViewProps {
   profile: AdminProfile;
@@ -59,9 +59,9 @@ export const AdminSecurityView: React.FC<AdminSecurityViewProps> = ({ profile, o
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to update password');
+      const parsed = await safeJsonResponse<{ success?: boolean; error?: any; message?: string }>(res);
+      if (!parsed.ok || !parsed.data?.success) {
+        throw new Error(parsed.error || 'Failed to update password');
       }
 
       setPassFeedback({ type: 'success', message: 'Password changed successfully! Keep your new password safe.' });
@@ -69,8 +69,8 @@ export const AdminSecurityView: React.FC<AdminSecurityViewProps> = ({ profile, o
       setNewPassword('');
       setConfirmPassword('');
       setTimeout(() => setPassFeedback(null), 5000);
-    } catch (err: any) {
-      setPassFeedback({ type: 'error', message: err.message || 'Password update failed.' });
+    } catch (err: unknown) {
+      setPassFeedback({ type: 'error', message: extractErrorMessage(err, 'Password update failed.') });
     } finally {
       setChangingPass(false);
     }

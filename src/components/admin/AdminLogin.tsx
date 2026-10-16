@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, Eye, EyeOff, Loader2, ArrowLeft, ShieldCheck, KeyRound } from 'lucide-react';
 import { AdminProfile } from '../../types/portfolio.js';
-import { setStoredSessionToken, safeJsonResponse } from '../../utils/api.js';
+import { setStoredSessionToken, safeJsonResponse, extractErrorMessage } from '../../utils/api.js';
 
 interface AdminLoginProps {
   onLoginSuccess: (profile: AdminProfile) => Promise<void> | void;
@@ -35,10 +35,14 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onBackTo
         body: JSON.stringify({ password: password.trim() }),
       });
 
-      const parsed = await safeJsonResponse<{ success: boolean; token?: string; profile?: AdminProfile; error?: string }>(res);
+      const parsed = await safeJsonResponse<{ success: boolean; token?: string; profile?: AdminProfile; error?: any }>(res);
 
       if (!parsed.ok || !parsed.data?.success) {
-        throw new Error(parsed.error || 'Invalid administrator credentials. Access denied.');
+        const message = extractErrorMessage(
+          parsed.error || parsed.data?.error,
+          'Invalid administrator credentials. Access denied.'
+        );
+        throw new Error(message);
       }
 
       const data = parsed.data;
@@ -54,8 +58,9 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onBackTo
 
       // Wait for authentication state and navigation
       await onLoginSuccess(data.profile);
-    } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please verify credentials.');
+    } catch (err: unknown) {
+      const displayError = extractErrorMessage(err, 'Authentication failed. Please verify credentials.');
+      setError(displayError);
       setLoading(false);
     }
   };
@@ -96,7 +101,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onBackTo
           {error && (
             <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2 animate-in fade-in">
               <Lock className="w-4 h-4 text-rose-400 shrink-0" />
-              <span>{error}</span>
+              <span>{typeof error === 'string' && error !== '[object Object]' ? error : extractErrorMessage(error)}</span>
             </div>
           )}
 
