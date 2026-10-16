@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PublicPortfolioData, AdminProfile } from './types/portfolio.js';
+import { INITIAL_PUBLIC_PORTFOLIO } from './data/initialData.js';
 import { Navbar } from './components/public/Navbar.js';
 import { Hero } from './components/public/Hero.js';
 import { About } from './components/public/About.js';
@@ -27,9 +28,8 @@ export default function App() {
     profile: null,
   });
 
-  const [portfolioData, setPortfolioData] = useState<PublicPortfolioData | null>(null);
+  const [portfolioData, setPortfolioData] = useState<PublicPortfolioData>(INITIAL_PUBLIC_PORTFOLIO);
   const [maintenanceMode, setMaintenanceMode] = useState<boolean>(false);
-  const [loadingPortfolio, setLoadingPortfolio] = useState<boolean>(true);
   const [activeSection, setActiveSection] = useState<string>('home');
   const [previewTokenInput, setPreviewTokenInput] = useState<string>('');
 
@@ -77,7 +77,6 @@ export default function App() {
 
   // 2. Fetch Public Portfolio Data
   const fetchPublicPortfolio = async () => {
-    setLoadingPortfolio(true);
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const preview = urlParams.get('preview');
@@ -94,8 +93,6 @@ export default function App() {
       }
     } catch (err) {
       console.error('Failed to load portfolio data:', err);
-    } finally {
-      setLoadingPortfolio(false);
     }
   };
 
@@ -234,17 +231,6 @@ export default function App() {
     );
   }
 
-  // Public Portfolio Loading
-  if (loadingPortfolio || !portfolioData) {
-    return (
-      <div className="min-h-screen bg-[#0b0c10] flex items-center justify-center text-slate-400">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-          <span className="text-xs font-mono uppercase tracking-widest text-slate-500">Loading Portfolio...</span>
-        </div>
-      </div>
-    );
-  }
 
   // Render Public Website (Home, About, Work, Contact + Dynamic Future Sections + Footer)
   return (
