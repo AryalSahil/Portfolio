@@ -1,0 +1,347 @@
+import fs from 'fs';
+import path from 'path';
+import { PortfolioData } from '../src/types/portfolio.js';
+
+const DATA_DIR = path.resolve(process.cwd(), 'data');
+const DB_FILE = path.join(DATA_DIR, 'portfolio_db.json');
+
+const INITIAL_DATA: PortfolioData = {
+  settings: {
+    siteTitle: 'Elena Vance — Principal Product Engineer & Architect',
+    siteDescription: 'Portfolio and selected works of Elena Vance, specialized in high-throughput cloud distributed systems, modern reactive interfaces, and design engineering.',
+    primaryColor: '#6366f1',
+    accentColor: '#38bdf8',
+    themeMode: 'dark',
+    maintenanceMode: false,
+    previewToken: 'preview_aetheria_2026',
+    resumeUrl: '/uploads/elena_vance_cv_2026.pdf',
+    allowResumeDownload: true,
+    contactEmail: 'elena.vance@studio-aetheria.dev',
+  },
+  headerFooter: {
+    brandName: 'Elena Vance',
+    logoUrl: '',
+    navItems: [
+      { id: 'nav-home', label: 'Home', href: '#home', order: 1, isVisible: true },
+      { id: 'nav-about', label: 'About', href: '#about', order: 2, isVisible: true },
+      { id: 'nav-work', label: 'Work', href: '#work', order: 3, isVisible: true },
+      { id: 'nav-contact', label: 'Contact', href: '#contact', order: 4, isVisible: true },
+    ],
+    footerText: 'Crafting resilient distributed backends, precise design systems, and joyful digital experiences.',
+    copyrightText: '© 2026 Elena Vance. All rights reserved.',
+    showSocialInFooter: true,
+  },
+  home: {
+    name: 'Elena Vance',
+    title: 'Principal Product Engineer & Architect',
+    subtitle: 'High-throughput systems · Reactive interfaces · Precision UI',
+    intro: 'I design and engineer mission-critical cloud platforms, ultra-responsive digital products, and design systems for ambitious technical teams worldwide.',
+    profilePhotoUrl: '/src/assets/images/hero_portrait_1792149624424.jpg',
+    primaryCtaText: 'View My Work',
+    primaryCtaLink: '#work',
+    secondaryCtaText: 'Contact Me',
+    secondaryCtaLink: '#contact',
+    showStats: true,
+    stats: [
+      { label: 'Years Experience', value: '10+', subtext: 'Distributed engineering' },
+      { label: 'Production Systems', value: '45+', subtext: 'Zero-downtime releases' },
+      { label: 'Global Traffic', value: '250M+', subtext: 'Monthly API requests' },
+      { label: 'Patents & Papers', value: '4', subtext: 'Distributed consensus' },
+    ],
+    isPublished: true,
+  },
+  about: {
+    bioTitle: 'Engineering at the intersection of architectural rigor and intuitive design.',
+    bioParagraphs: [
+      'Over the past decade, I have focused on building distributed systems that scale predictably and user interfaces that feel instantaneous. My work spans low-latency event-driven backends, WebGL visualization pipelines, and comprehensive enterprise design languages.',
+      'I believe the best software products emerge when deep systems infrastructure meets unapologetic attention to typographic nuance, kinetic feedback, and human ergonomics. When not in code, you can find me restoring analog synthesis hardware and mentoring open-source contributors.'
+    ],
+    profilePhotoUrl: '/src/assets/images/about_workspace_1792149624407.jpg',
+    resumeUrl: '/uploads/elena_vance_cv_2026.pdf',
+    resumeButtonText: 'Download Resume',
+    showResume: true,
+    interests: [
+      'Distributed Consensus Algorithms',
+      'High-Performance WebGL & Canvas',
+      'Modular Analog Synthesizers',
+      'Mechanical Keyboard Typography',
+      'Specialty Pour-Over Coffee',
+      'Ultra-Distance Trail Running'
+    ],
+    education: [
+      {
+        id: 'edu-1',
+        degree: 'M.S. in Computer Science (Distributed Systems)',
+        institution: 'Stanford University',
+        period: '2016 — 2018',
+        description: 'Focus on fault-tolerant distributed algorithms, Raft consensus validation, and peer-to-peer data replication.',
+        order: 1,
+      },
+      {
+        id: 'edu-2',
+        degree: 'B.S. in Software Engineering & Human-Computer Interaction',
+        institution: 'University of Washington',
+        period: '2012 — 2016',
+        description: 'Graduated Magna Cum Laude. Led university developer guild and authored thesis on reactive state management.',
+        order: 2,
+      }
+    ],
+    careerGoals: [
+      { id: 'cg-1', goal: 'Pioneer zero-copy browser data engines for collaborative spatial computing', timeframe: '2026-2027', isCompleted: false },
+      { id: 'cg-2', goal: 'Author an open-source visual telemetry framework with sub-millisecond overhead', timeframe: '2026', isCompleted: true },
+      { id: 'cg-3', goal: 'Foster engineering fellowships for underrepresented developers in open-source systems', timeframe: 'Ongoing', isCompleted: false },
+    ],
+    isPublished: true,
+  },
+  skills: [
+    { id: 'sk-1', name: 'TypeScript & React 19', category: 'Frontend', proficiency: 98, order: 1, isVisible: true },
+    { id: 'sk-2', name: 'Tailwind CSS & Motion', category: 'Frontend', proficiency: 95, order: 2, isVisible: true },
+    { id: 'sk-3', name: 'Node.js & Go Microservices', category: 'Backend', proficiency: 94, order: 3, isVisible: true },
+    { id: 'sk-4', name: 'PostgreSQL & Redis Streams', category: 'Backend', proficiency: 92, order: 4, isVisible: true },
+    { id: 'sk-5', name: 'Kubernetes & Docker', category: 'Cloud & DevOps', proficiency: 90, order: 5, isVisible: true },
+    { id: 'sk-6', name: 'GraphQL & gRPC APIs', category: 'Backend', proficiency: 88, order: 6, isVisible: true },
+    { id: 'sk-7', name: 'Design Systems Architecture', category: 'Design & Architecture', proficiency: 96, order: 7, isVisible: true },
+    { id: 'sk-8', name: 'Distributed Consensus & Raft', category: 'Design & Architecture', proficiency: 86, order: 8, isVisible: true },
+    { id: 'sk-9', name: 'Vite, esbuild & Webpack', category: 'Tools', proficiency: 92, order: 9, isVisible: true },
+    { id: 'sk-10', name: 'CI/CD & Observability (Grafana)', category: 'Cloud & DevOps', proficiency: 89, order: 10, isVisible: true },
+  ],
+  projects: [
+    {
+      id: 'proj-1',
+      title: 'Aether Distributed Telemetry Mesh',
+      slug: 'aether-telemetry-mesh',
+      subtitle: 'Real-time multi-cloud packet visualizer handling 250k events/sec',
+      description: 'A low-latency network intelligence canvas visualizing distributed packet routes, latency spikes, and automatic partition failovers across three cloud providers with sub-millisecond precision.',
+      longDescription: 'Engineered an event-driven telemetry platform using WebSockets, WebGL instanced rendering, and an in-memory streaming engine. Provides enterprise DevOps teams with live spatial network topology graphs and automated anomaly detection.',
+      thumbnail: '/src/assets/images/project_cloud_arch_1792149624510.jpg',
+      galleryImages: ['/src/assets/images/project_cloud_arch_1792149624510.jpg'],
+      tags: ['TypeScript', 'WebGL', 'Go', 'Redis', 'Kubernetes'],
+      liveUrl: 'https://demo.aether-telemetry.dev',
+      githubUrl: 'https://github.com/elena-vance/aether-mesh',
+      isFeatured: true,
+      isPublished: true,
+      order: 1,
+      createdAt: '2026-08-12T10:00:00.000Z',
+      updatedAt: '2026-10-01T14:30:00.000Z',
+    },
+    {
+      id: 'proj-2',
+      title: 'Nova Unified Design System & Studio',
+      slug: 'nova-design-system',
+      subtitle: 'Component architecture with zero-runtime CSS tokens and strict accessibility',
+      description: 'An enterprise multi-brand design system featuring 40+ accessible headless components, fluid typographic scales, automated contrast verifications, and interactive token workbench.',
+      longDescription: 'Nova powers 12 internal applications across 4 business divisions. It features automated token synchronization from Figma directly into CSS variables, 100% keyboard accessibility compliance, and sub-10kb bundle overhead.',
+      thumbnail: '/src/assets/images/project_design_system_1792149625333.jpg',
+      galleryImages: ['/src/assets/images/project_design_system_1792149625333.jpg'],
+      tags: ['React 19', 'Tailwind CSS', 'Figma API', 'Radix Primitives', 'Storybook'],
+      liveUrl: 'https://nova-design-studio.dev',
+      githubUrl: 'https://github.com/elena-vance/nova-tokens',
+      isFeatured: true,
+      isPublished: true,
+      order: 2,
+      createdAt: '2026-06-20T08:00:00.000Z',
+      updatedAt: '2026-09-15T11:00:00.000Z',
+    },
+    {
+      id: 'proj-3',
+      title: 'Aural Harmonic Neural Synthesizer',
+      slug: 'aural-harmonic-synth',
+      subtitle: 'Browser-native additive audio engine with live FFT spectrum analyzer',
+      description: 'A Web Audio API instrument capable of polyphonic analog oscillator synthesis, frequency modulation, custom wavetable importing, and hardware MIDI controller support.',
+      longDescription: 'Utilizes Web Audio AudioWorklet nodes running on a dedicated audio rendering thread for sample-accurate timing and zero UI jitter. Includes a custom Canvas 2D FFT oscilloscope and interactive filter envelopes.',
+      thumbnail: '/src/assets/images/project_audio_neural_1792149625520.jpg',
+      galleryImages: ['/src/assets/images/project_audio_neural_1792149625520.jpg'],
+      tags: ['Web Audio API', 'AudioWorklet', 'Canvas 2D', 'Web MIDI', 'DSP'],
+      liveUrl: 'https://synth.aural-harmonic.dev',
+      githubUrl: 'https://github.com/elena-vance/aural-synth',
+      isFeatured: true,
+      isPublished: true,
+      order: 3,
+      createdAt: '2026-04-10T16:00:00.000Z',
+      updatedAt: '2026-08-22T09:45:00.000Z',
+    },
+  ],
+  socialLinks: [
+    { id: 'soc-1', platform: 'GitHub', label: 'GitHub', url: 'https://github.com/elena-vance', isEnabled: true, order: 1 },
+    { id: 'soc-2', platform: 'LinkedIn', label: 'LinkedIn', url: 'https://linkedin.com/in/elena-vance-eng', isEnabled: true, order: 2 },
+    { id: 'soc-3', platform: 'X', label: 'X (Twitter)', url: 'https://x.com/elena_vance_dev', isEnabled: true, order: 3 },
+    { id: 'soc-4', platform: 'YouTube', label: 'YouTube Tech Talks', url: 'https://youtube.com/@elena-vance-code', isEnabled: true, order: 4 },
+  ],
+  contactMessages: [
+    {
+      id: 'msg-sample-1',
+      name: 'Marcus Sterling',
+      email: 'm.sterling@stratos-ventures.com',
+      subject: 'Keynote Speaker & Architecture Consulting',
+      message: 'Hi Elena, I was thoroughly impressed by your telemetry mesh presentation. We are scaling our core infrastructure and would love to discuss a 6-month advisory retainer or keynote engagement at our European CTO Summit.',
+      status: 'unread',
+      createdAt: '2026-10-15T15:20:00.000Z',
+      ipAddress: '198.51.100.42',
+    },
+    {
+      id: 'msg-sample-2',
+      name: 'Dr. Sarah Lin',
+      email: 'sarah.lin@berkeley.edu',
+      subject: 'Collaborative Open-Source Fellowship',
+      message: 'Greetings! Our research lab would love to collaborate with you on verifying the Raft consensus safety invariant properties in real-world distributed settings.',
+      status: 'read',
+      createdAt: '2026-10-12T09:14:00.000Z',
+      ipAddress: '136.152.142.10',
+    }
+  ],
+  mediaLibrary: [
+    {
+      id: 'med-1',
+      name: 'hero_portrait.jpg',
+      originalName: 'hero_portrait.jpg',
+      url: '/src/assets/images/hero_portrait_1792149624424.jpg',
+      mimeType: 'image/jpeg',
+      size: 428000,
+      uploadedAt: '2026-10-16T04:20:00.000Z',
+    },
+    {
+      id: 'med-2',
+      name: 'about_workspace.jpg',
+      originalName: 'about_workspace.jpg',
+      url: '/src/assets/images/about_workspace_1792149624407.jpg',
+      mimeType: 'image/jpeg',
+      size: 512000,
+      uploadedAt: '2026-10-16T04:20:00.000Z',
+    },
+    {
+      id: 'med-3',
+      name: 'project_cloud_arch.jpg',
+      originalName: 'project_cloud_arch.jpg',
+      url: '/src/assets/images/project_cloud_arch_1792149624510.jpg',
+      mimeType: 'image/jpeg',
+      size: 389000,
+      uploadedAt: '2026-10-16T04:20:00.000Z',
+    },
+    {
+      id: 'med-4',
+      name: 'project_design_system.jpg',
+      originalName: 'project_design_system.jpg',
+      url: '/src/assets/images/project_design_system_1792149625333.jpg',
+      mimeType: 'image/jpeg',
+      size: 440000,
+      uploadedAt: '2026-10-16T04:20:00.000Z',
+    },
+    {
+      id: 'med-5',
+      name: 'project_audio_neural.jpg',
+      originalName: 'project_audio_neural.jpg',
+      url: '/src/assets/images/project_audio_neural_1792149625520.jpg',
+      mimeType: 'image/jpeg',
+      size: 495000,
+      uploadedAt: '2026-10-16T04:20:00.000Z',
+    }
+  ],
+  adminProfile: {
+    name: 'Elena Vance (Administrator)',
+    email: 'admin@studio-aetheria.dev',
+    role: 'Super Administrator',
+    avatarUrl: '/src/assets/images/hero_portrait_1792149624424.jpg',
+    lastLogin: '2026-10-16T04:19:00.000Z',
+  },
+  // Default password as explicitly instructed by prompt: 782447
+  adminPasswordHash: '782447',
+  activityLogs: [
+    {
+      id: 'log-1',
+      action: 'SYSTEM_INITIALIZED',
+      details: 'Portfolio database initialized with core sections (Home, About, Work, Contact).',
+      timestamp: '2026-10-16T04:19:00.000Z',
+      adminName: 'System Engine',
+    },
+    {
+      id: 'log-2',
+      action: 'PROJECTS_SEEDED',
+      details: 'Published 3 initial showcase engineering projects to the Work section.',
+      timestamp: '2026-10-16T04:19:10.000Z',
+      adminName: 'System Engine',
+    }
+  ],
+  modularSections: [
+    { id: 'sec-home', name: 'Home', slug: 'home', isEnabled: true, order: 1, description: 'Hero banner, introduction, call to action, and quick stats' },
+    { id: 'sec-about', name: 'About', slug: 'about', isEnabled: true, order: 2, description: 'Biography, skills, education, interests, and career milestones' },
+    { id: 'sec-work', name: 'Work', slug: 'work', isEnabled: true, order: 3, description: 'Project showcase portfolio cards, tech stacks, and live demo links' },
+    { id: 'sec-contact', name: 'Contact', slug: 'contact', isEnabled: true, order: 4, description: 'Secure inquiry form, direct email, and social connectivity' },
+    // Future expansion sections (ready to enable at any point in the future)
+    { id: 'sec-experience', name: 'Experience & Work History', slug: 'experience', isEnabled: false, order: 5, description: 'Career timeline, company roles, impact metrics' },
+    { id: 'sec-certifications', name: 'Certifications & Accreditations', slug: 'certifications', isEnabled: false, order: 6, description: 'Professional certifications, badges, and verification links' },
+    { id: 'sec-services', name: 'Client Services & Consulting', slug: 'services', isEnabled: false, order: 7, description: 'Consulting packages, architecture review, and advisory options' },
+    { id: 'sec-testimonials', name: 'Client & Peer Endorsements', slug: 'testimonials', isEnabled: false, order: 8, description: 'Executive references and team feedback' },
+    { id: 'sec-blog', name: 'Articles & Tech Insights', slug: 'blog', isEnabled: false, order: 9, description: 'Technical deep-dives and engineering monographs' },
+  ]
+};
+
+// Ensure data folder exists
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+export class PortfolioDatabase {
+  private static instance: PortfolioDatabase;
+  private cache: PortfolioData | null = null;
+
+  private constructor() {
+    this.ensureInitialized();
+  }
+
+  public static getInstance(): PortfolioDatabase {
+    if (!PortfolioDatabase.instance) {
+      PortfolioDatabase.instance = new PortfolioDatabase();
+    }
+    return PortfolioDatabase.instance;
+  }
+
+  private ensureInitialized(): void {
+    if (!fs.existsSync(DB_FILE)) {
+      this.saveData(INITIAL_DATA);
+    }
+  }
+
+  public getData(): PortfolioData {
+    if (this.cache) {
+      return this.cache;
+    }
+    try {
+      if (fs.existsSync(DB_FILE)) {
+        const raw = fs.readFileSync(DB_FILE, 'utf-8');
+        this.cache = JSON.parse(raw);
+        return this.cache!;
+      }
+    } catch (err) {
+      console.error('Error reading portfolio DB, re-initializing:', err);
+    }
+    this.saveData(INITIAL_DATA);
+    return INITIAL_DATA;
+  }
+
+  public saveData(data: PortfolioData): void {
+    this.cache = data;
+    // Atomic write pattern: write to tmp file then rename
+    const tmpFile = `${DB_FILE}.tmp.${Date.now()}`;
+    fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf-8');
+    fs.renameSync(tmpFile, DB_FILE);
+  }
+
+  public logActivity(action: string, details: string, adminName = 'Admin'): void {
+    const data = this.getData();
+    const newLog = {
+      id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      action,
+      details,
+      timestamp: new Date().toISOString(),
+      adminName,
+    };
+    data.activityLogs.unshift(newLog);
+    // Keep max 200 logs
+    if (data.activityLogs.length > 200) {
+      data.activityLogs = data.activityLogs.slice(0, 200);
+    }
+    this.saveData(data);
+  }
+}
+
+export const db = PortfolioDatabase.getInstance();

@@ -1,0 +1,6 @@
+{
+  "name": "Aetheria - Personal Portfolio & Studio CMS",
+  "description": "A modern, high-performance personal portfolio website with a secure administration panel for real-time content management, project showcases, and contact workflows.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
