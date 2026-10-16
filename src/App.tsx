@@ -16,7 +16,7 @@ import { FutureSectionRenderer } from './components/public/FutureSectionRenderer
 import { AdminLogin } from './components/admin/AdminLogin.js';
 import { AdminPanel } from './components/admin/AdminPanel.js';
 import { Loader2, Wrench } from 'lucide-react';
-import { authFetch, clearStoredSessionToken } from './utils/api.js';
+import { authFetch, clearStoredSessionToken, safeJsonResponse } from './utils/api.js';
 
 export default function App() {
   const [isAdminRoute, setIsAdminRoute] = useState<boolean>(
@@ -58,10 +58,12 @@ export default function App() {
   useEffect(() => {
     const checkAdminSession = async () => {
       try {
-        const res = await authFetch('/api/auth/check');
-        const json = await res.json();
-        if (json.authenticated && json.profile) {
-          setAdminAuth({ checked: true, authenticated: true, profile: json.profile });
+        const res = await authFetch('/api/auth/check', {
+          headers: { 'Accept': 'application/json' },
+        });
+        const parsed = await safeJsonResponse<{ authenticated: boolean; profile?: AdminProfile }>(res);
+        if (parsed.ok && parsed.data?.authenticated && parsed.data?.profile) {
+          setAdminAuth({ checked: true, authenticated: true, profile: parsed.data.profile });
         } else {
           clearStoredSessionToken();
           setAdminAuth({ checked: true, authenticated: false, profile: null });
@@ -82,14 +84,18 @@ export default function App() {
       const preview = urlParams.get('preview');
       const fetchUrl = preview ? `/api/portfolio?preview=${encodeURIComponent(preview)}` : '/api/portfolio';
 
-      const res = await fetch(fetchUrl);
-      const json = await res.json();
+      const res = await fetch(fetchUrl, {
+        headers: { 'Accept': 'application/json' },
+      });
+      const parsed = await safeJsonResponse<PublicPortfolioData & { maintenance?: boolean }>(res);
 
-      if (json.maintenance) {
-        setMaintenanceMode(true);
-      } else {
-        setMaintenanceMode(false);
-        setPortfolioData(json);
+      if (parsed.ok && parsed.data) {
+        if (parsed.data.maintenance) {
+          setMaintenanceMode(true);
+        } else {
+          setMaintenanceMode(false);
+          setPortfolioData(parsed.data);
+        }
       }
     } catch (err) {
       console.error('Failed to load portfolio data:', err);

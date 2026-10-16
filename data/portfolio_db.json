@@ -421,10 +421,108 @@
     "email": "admin@studio-aetheria.dev",
     "role": "Super Administrator",
     "avatarUrl": "/src/assets/images/hero_portrait_1792149624424.jpg",
-    "lastLogin": "2026-10-16T11:42:41.483Z"
+    "lastLogin": "2026-10-16T12:04:18.287Z"
   },
   "adminPasswordHash": "782447",
   "activityLogs": [
+    {
+      "id": "log-1792152258287-566m",
+      "action": "ADMIN_LOGIN",
+      "details": "Administrator logged in successfully from ::ffff:127.0.0.1",
+      "timestamp": "2026-10-16T12:04:18.287Z",
+      "adminName": "Elena Vance (Administrator)"
+    },
+    {
+      "id": "log-1792152246602-igr0",
+      "action": "LOGIN_FAILED",
+      "details": "Failed admin login attempt from ::ffff:127.0.0.1",
+      "timestamp": "2026-10-16T12:04:06.602Z",
+      "adminName": "Anonymous"
+    },
+    {
+      "id": "log-1792152036334-ntl7",
+      "action": "LOGIN_FAILED",
+      "details": "Failed admin login attempt from ::ffff:127.0.0.1",
+      "timestamp": "2026-10-16T12:00:36.334Z",
+      "adminName": "Anonymous"
+    },
+    {
+      "id": "log-1792151918935-plt2",
+      "action": "ADMIN_LOGIN",
+      "details": "Administrator logged in successfully from ::ffff:127.0.0.1",
+      "timestamp": "2026-10-16T11:58:38.935Z",
+      "adminName": "Elena Vance (Administrator)"
+    },
+    {
+      "id": "log-1792151914669-xj5p",
+      "action": "LOGIN_FAILED",
+      "details": "Failed admin login attempt from ::ffff:127.0.0.1",
+      "timestamp": "2026-10-16T11:58:34.669Z",
+      "adminName": "Anonymous"
+    },
+    {
+      "id": "log-1792151576608-bx5b",
+      "action": "MODULAR_SECTIONS_UPDATED",
+      "details": "Modular portfolio sections visibility configured",
+      "timestamp": "2026-10-16T11:52:56.608Z",
+      "adminName": "Elena Vance (Administrator)"
+    },
+    {
+      "id": "log-1792151576302-4lrx",
+      "action": "SETTINGS_UPDATED",
+      "details": "Website configuration, theme, or navigation updated",
+      "timestamp": "2026-10-16T11:52:56.302Z",
+      "adminName": "Elena Vance (Administrator)"
+    },
+    {
+      "id": "log-1792151559402-2an4",
+      "action": "MODULAR_SECTIONS_UPDATED",
+      "details": "Modular portfolio sections visibility configured",
+      "timestamp": "2026-10-16T11:52:39.402Z",
+      "adminName": "Elena Vance (Administrator)"
+    },
+    {
+      "id": "log-1792151559116-eiut",
+      "action": "SETTINGS_UPDATED",
+      "details": "Website configuration, theme, or navigation updated",
+      "timestamp": "2026-10-16T11:52:39.116Z",
+      "adminName": "Elena Vance (Administrator)"
+    },
+    {
+      "id": "log-1792151546972-t8w5",
+      "action": "MODULAR_SECTIONS_UPDATED",
+      "details": "Modular portfolio sections visibility configured",
+      "timestamp": "2026-10-16T11:52:26.972Z",
+      "adminName": "Elena Vance (Administrator)"
+    },
+    {
+      "id": "log-1792151546679-mgoj",
+      "action": "SETTINGS_UPDATED",
+      "details": "Website configuration, theme, or navigation updated",
+      "timestamp": "2026-10-16T11:52:26.679Z",
+      "adminName": "Elena Vance (Administrator)"
+    },
+    {
+      "id": "log-1792151420137-a3ve",
+      "action": "MODULAR_SECTIONS_UPDATED",
+      "details": "Modular portfolio sections visibility configured",
+      "timestamp": "2026-10-16T11:50:20.137Z",
+      "adminName": "Elena Vance (Administrator)"
+    },
+    {
+      "id": "log-1792151419850-1q8p",
+      "action": "SETTINGS_UPDATED",
+      "details": "Website configuration, theme, or navigation updated",
+      "timestamp": "2026-10-16T11:50:19.850Z",
+      "adminName": "Elena Vance (Administrator)"
+    },
+    {
+      "id": "log-1792151082331-ktuk",
+      "action": "ADMIN_LOGIN",
+      "details": "Administrator logged in successfully from ::ffff:127.0.0.1",
+      "timestamp": "2026-10-16T11:44:42.331Z",
+      "adminName": "Elena Vance (Administrator)"
+    },
     {
       "id": "log-1792150961484-ua98",
       "action": "ADMIN_LOGIN",

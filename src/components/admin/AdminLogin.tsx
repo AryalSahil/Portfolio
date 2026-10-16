@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, Eye, EyeOff, Loader2, ArrowLeft, ShieldCheck, KeyRound } from 'lucide-react';
 import { AdminProfile } from '../../types/portfolio.js';
-import { setStoredSessionToken } from '../../utils/api.js';
+import { setStoredSessionToken, safeJsonResponse } from '../../utils/api.js';
 
 interface AdminLoginProps {
   onLoginSuccess: (profile: AdminProfile) => Promise<void> | void;
@@ -27,19 +27,29 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onBackTo
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         credentials: 'include',
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password: password.trim() }),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Invalid administrator credentials. Access denied.');
+      const parsed = await safeJsonResponse<{ success: boolean; token?: string; profile?: AdminProfile; error?: string }>(res);
+
+      if (!parsed.ok || !parsed.data?.success) {
+        throw new Error(parsed.error || 'Invalid administrator credentials. Access denied.');
       }
+
+      const data = parsed.data;
 
       // Store the session token to support header-based authentication in iframe environments
       if (data.token) {
         setStoredSessionToken(data.token);
+      }
+
+      if (!data.profile) {
+        throw new Error('Authentication profile was missing from the server response.');
       }
 
       // Wait for authentication state and navigation

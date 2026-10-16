@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { PortfolioData } from '../src/types/portfolio.js';
+import type { PortfolioData } from '../src/types/portfolio.ts';
 
 const DATA_DIR = path.resolve(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'portfolio_db.json');

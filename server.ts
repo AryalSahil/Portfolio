@@ -1,10 +1,11 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
-import { db } from './server/db.js';
-import { ProjectItem, SkillItem, SocialLink } from './src/types/portfolio.js';
+import { db } from './server/db.ts';
+import type { ProjectItem, SkillItem, SocialLink } from './src/types/portfolio.ts';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -132,14 +133,15 @@ function isConnectionSecure(req: Request): boolean {
 // ==========================================
 
 // Login with password (verified securely against server DB)
-app.post('/api/auth/login', (req: Request, res: Response) => {
+app.post(['/api/auth/login', '/api/auth/login/'], (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
   const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
   if (!checkRateLimit(`login_${clientIp}`, 10, 5 * 60 * 1000)) {
     res.status(429).json({ error: 'Too many login attempts. Please wait 5 minutes before trying again.' });
     return;
   }
 
-  const { password } = req.body;
+  const { password } = req.body || {};
   if (!password) {
     res.status(400).json({ error: 'Password is required' });
     return;
@@ -176,7 +178,8 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
 });
 
 // Logout
-app.post('/api/auth/logout', (req: Request, res: Response) => {
+app.post(['/api/auth/logout', '/api/auth/logout/'], (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
   const cookieToken = req.cookies?.portfolio_admin_session;
   const authHeader = req.headers.authorization;
   const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
@@ -190,7 +193,8 @@ app.post('/api/auth/logout', (req: Request, res: Response) => {
 });
 
 // Check Session Status
-app.get('/api/auth/check', (req: Request, res: Response) => {
+app.get(['/api/auth/check', '/api/auth/check/'], (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
   const cookieToken = req.cookies?.portfolio_admin_session;
   const authHeader = req.headers.authorization;
   const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
@@ -849,7 +853,29 @@ app.put('/api/admin/modular-sections', requireAuth, (req: Request, res: Response
 });
 
 // ==========================================
-// 10. VITE DEV SERVER OR STATIC SERVE
+// 10. API 404 CATCH-ALL & ERROR HANDLERS
+// ==========================================
+
+// Ensure unmatched /api routes always return JSON 404 instead of HTML
+app.all('/api/*', (req: Request, res: Response) => {
+  res.status(404).json({ error: `API route not found: ${req.method} ${req.originalUrl}` });
+});
+
+// Global API error handler ensuring JSON responses for unexpected server errors
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error('Unhandled server error on route:', req.originalUrl, err);
+  if (req.path.startsWith('/api')) {
+    const status = typeof err.status === 'number' ? err.status : (typeof err.statusCode === 'number' ? err.statusCode : 500);
+    res.status(status).json({
+      error: status < 500 && err.message ? err.message : 'An internal server error occurred. Please try again.',
+    });
+    return;
+  }
+  next(err);
+});
+
+// ==========================================
+// 11. VITE DEV SERVER OR STATIC SERVE
 // ==========================================
 
 async function setupServer() {

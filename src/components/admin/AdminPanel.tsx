@@ -15,7 +15,7 @@ import { WebsiteSettingsView } from './WebsiteSettingsView.js';
 import { AdminSecurityView } from './AdminSecurityView.js';
 import { ActivityLogsView } from './ActivityLogsView.js';
 import { Loader2, X } from 'lucide-react';
-import { authFetch } from '../../utils/api.js';
+import { authFetch, safeJsonResponse } from '../../utils/api.js';
 
 interface AdminPanelProps {
   initialProfile: AdminProfile;
@@ -39,8 +39,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialProfile, onLogout
         onLogout();
         return;
       }
-      const json = await res.json();
-      setData(json);
+      const parsed = await safeJsonResponse<PortfolioData>(res);
+      if (parsed.ok && parsed.data) {
+        setData(parsed.data);
+      }
     } catch (err) {
       console.error('Failed to load admin data:', err);
     } finally {
