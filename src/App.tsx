@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { PublicPortfolioData, AdminProfile } from './types/portfolio.js';
 import { Navbar } from './components/public/Navbar.js';
 import { Hero } from './components/public/Hero.js';
@@ -293,6 +294,7 @@ export default function App() {
         socialLinks={portfolioData.socialLinks}
         onNavigateToAdmin={() => navigateToAdmin()}
       />
+      <Analytics />
     </div>
   );
 }
