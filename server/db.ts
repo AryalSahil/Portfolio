@@ -2,8 +2,11 @@ import fs from 'fs';
 import path from 'path';
 import type { PortfolioData } from '../src/types/portfolio.ts';
 
-const DATA_DIR = path.resolve(process.cwd(), 'data');
+const IS_SERVERLESS = process.env.VERCEL === '1' || process.env.NOW_REGION !== undefined;
+const BUNDLED_DATA_DIR = path.resolve(process.cwd(), 'data');
+const DATA_DIR = IS_SERVERLESS ? path.join('/tmp', 'data') : BUNDLED_DATA_DIR;
 const DB_FILE = path.join(DATA_DIR, 'portfolio_db.json');
+const BUNDLED_DB_FILE = path.join(BUNDLED_DATA_DIR, 'portfolio_db.json');
 
 const INITIAL_DATA: PortfolioData = {
   settings: {
@@ -275,9 +278,13 @@ const INITIAL_DATA: PortfolioData = {
   ]
 };
 
-// Ensure data folder exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+// Ensure data folder exists safely
+try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+} catch (e) {
+  console.warn('Could not create data directory, fallback to in-memory persistence:', e);
 }
 
 export class PortfolioDatabase {
@@ -297,6 +304,16 @@ export class PortfolioDatabase {
 
   private ensureInitialized(): void {
     if (!fs.existsSync(DB_FILE)) {
+      if (fs.existsSync(BUNDLED_DB_FILE)) {
+        try {
+          const raw = fs.readFileSync(BUNDLED_DB_FILE, 'utf-8');
+          const data = JSON.parse(raw);
+          this.saveData(data);
+          return;
+        } catch {
+          // Fall back to INITIAL_DATA
+        }
+      }
       this.saveData(INITIAL_DATA);
     }
   }
@@ -311,6 +328,11 @@ export class PortfolioDatabase {
         this.cache = JSON.parse(raw);
         return this.cache!;
       }
+      if (fs.existsSync(BUNDLED_DB_FILE)) {
+        const raw = fs.readFileSync(BUNDLED_DB_FILE, 'utf-8');
+        this.cache = JSON.parse(raw);
+        return this.cache!;
+      }
     } catch (err) {
       console.error('Error reading portfolio DB, re-initializing:', err);
     }
@@ -320,10 +342,16 @@ export class PortfolioDatabase {
 
   public saveData(data: PortfolioData): void {
     this.cache = data;
-    // Atomic write pattern: write to tmp file then rename
-    const tmpFile = `${DB_FILE}.tmp.${Date.now()}`;
-    fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf-8');
-    fs.renameSync(tmpFile, DB_FILE);
+    try {
+      if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+      }
+      const tmpFile = `${DB_FILE}.tmp.${Date.now()}`;
+      fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf-8');
+      fs.renameSync(tmpFile, DB_FILE);
+    } catch (err) {
+      console.warn('Filesystem write not permitted or failed, state preserved in memory:', err);
+    }
   }
 
   public logActivity(action: string, details: string, adminName = 'Admin'): void {

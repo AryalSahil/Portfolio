@@ -12,9 +12,14 @@ const PORT = process.env.PORT || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Ensure public uploads directory
+const IS_SERVERLESS = process.env.VERCEL === '1' || process.env.NOW_REGION !== undefined;
 const UPLOADS_DIR = path.resolve(process.cwd(), 'public', 'uploads');
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+} catch (e) {
+  console.warn('Uploads directory not writable on serverless, using fallback:', e);
 }
 
 // Global middlewares
@@ -23,6 +28,21 @@ app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 app.use(cookieParser());
 app.use('/uploads', express.static(UPLOADS_DIR));
 
+// Serverless URL normalization
+if (IS_SERVERLESS) {
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.url && !req.url.startsWith('/api') && !req.url.startsWith('/uploads') && !req.url.startsWith('/assets') && !req.url.startsWith('/_')) {
+      req.url = `/api${req.url.startsWith('/') ? '' : '/'}${req.url}`;
+    }
+    next();
+  });
+}
+
+// Root API discovery / health check
+app.get(['/api', '/api/'], (req: Request, res: Response) => {
+  res.json({ ok: true, status: 'healthy', service: 'portfolio-api', timestamp: new Date().toISOString() });
+});
+
 // Session Store (persisted to data/sessions.json with TTL)
 interface AdminSession {
   token: string;
@@ -30,7 +50,7 @@ interface AdminSession {
   expiresAt: number;
 }
 
-const DATA_DIR = path.resolve(process.cwd(), 'data');
+const DATA_DIR = IS_SERVERLESS ? path.join('/tmp', 'data') : path.resolve(process.cwd(), 'data');
 const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -899,7 +919,14 @@ async function setupServer() {
   });
 }
 
-setupServer().catch((err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+// In standard environments (Node / Docker / Cloud Run), start the HTTP server.
+// In Vercel serverless, app is exported and managed by the Vercel Lambda handler.
+if (!process.env.VERCEL) {
+  setupServer().catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}
+
+export default app;
+export { app };

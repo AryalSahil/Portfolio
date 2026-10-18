@@ -421,10 +421,59 @@
     "email": "admin@studio-aetheria.dev",
     "role": "Super Administrator",
     "avatarUrl": "/src/assets/images/hero_portrait_1792149624424.jpg",
-    "lastLogin": "2026-10-16T12:26:27.015Z"
+    "lastLogin": "2026-10-18T08:46:16.427Z"
   },
   "adminPasswordHash": "782447",
   "activityLogs": [
+    {
+      "id": "log-1792313176428-arsg",
+      "action": "ADMIN_LOGIN",
+      "details": "Administrator logged in successfully from ::ffff:127.0.0.1",
+      "timestamp": "2026-10-18T08:46:16.428Z",
+      "adminName": "Elena Vance (Administrator)"
+    },
+    {
+      "id": "log-1792313172299-cj97",
+      "action": "LOGIN_FAILED",
+      "details": "Failed admin login attempt from ::ffff:127.0.0.1",
+      "timestamp": "2026-10-18T08:46:12.299Z",
+      "adminName": "Anonymous"
+    },
+    {
+      "id": "log-1792312762105-mpv3",
+      "action": "ADMIN_LOGIN",
+      "details": "Administrator logged in successfully from ::ffff:127.0.0.1",
+      "timestamp": "2026-10-18T08:39:22.105Z",
+      "adminName": "Elena Vance (Administrator)"
+    },
+    {
+      "id": "log-1792312678798-zeen",
+      "action": "ADMIN_LOGIN",
+      "details": "Administrator logged in successfully from ::ffff:127.0.0.1",
+      "timestamp": "2026-10-18T08:37:58.798Z",
+      "adminName": "Elena Vance (Administrator)"
+    },
+    {
+      "id": "log-1792312672568-a54q",
+      "action": "LOGIN_FAILED",
+      "details": "Failed admin login attempt from ::ffff:127.0.0.1",
+      "timestamp": "2026-10-18T08:37:52.568Z",
+      "adminName": "Anonymous"
+    },
+    {
+      "id": "log-1792311783880-x45h",
+      "action": "ADMIN_LOGIN",
+      "details": "Administrator logged in successfully from ::ffff:127.0.0.1",
+      "timestamp": "2026-10-18T08:23:03.880Z",
+      "adminName": "Elena Vance (Administrator)"
+    },
+    {
+      "id": "log-1792311779978-cf9u",
+      "action": "LOGIN_FAILED",
+      "details": "Failed admin login attempt from ::ffff:127.0.0.1",
+      "timestamp": "2026-10-18T08:22:59.978Z",
+      "adminName": "Anonymous"
+    },
     {
       "id": "log-1792153587015-n9j5",
       "action": "ADMIN_LOGIN",
