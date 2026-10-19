@@ -196,7 +196,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         <div
-          onClick={() => onNavigateTab('settings')}
+          onClick={() => onNavigateTab('seo')}
           className="p-5 rounded-2xl border border-slate-800/80 bg-slate-900/40 hover:border-slate-700 hover:bg-slate-900/60 transition-all cursor-pointer group space-y-3"
         >
           <div className="flex items-center justify-between">

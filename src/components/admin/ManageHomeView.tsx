@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HomeContent } from '../../types/portfolio.js';
-import { Save, Plus, Trash2, CheckCircle2, AlertCircle, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Save, Plus, Trash2, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { ImageUploader } from './ImageUploader.js';
 
 interface ManageHomeViewProps {
   initialData: HomeContent;
@@ -12,6 +13,12 @@ export const ManageHomeView: React.FC<ManageHomeViewProps> = ({ initialData, onS
   const [formData, setFormData] = useState<HomeContent>(initialData);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    }
+  }, [initialData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -163,39 +170,16 @@ export const ManageHomeView: React.FC<ManageHomeViewProps> = ({ initialData, onS
           />
         </div>
 
-        {/* Profile Photo URL & Preview */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-mono uppercase tracking-wider text-slate-400">Profile Photo URL</label>
-            {onOpenMediaLibrary && (
-              <button
-                type="button"
-                onClick={onOpenMediaLibrary}
-                className="text-xs text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <ImageIcon className="w-3.5 h-3.5" />
-                <span>Select from Media Library</span>
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-xl overflow-hidden border border-slate-800 bg-slate-900 shrink-0">
-              <img
-                src={formData.profilePhotoUrl || '/src/assets/images/hero_portrait_1792149624424.jpg'}
-                alt="Profile Preview"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <input
-              type="text"
-              name="profilePhotoUrl"
-              value={formData.profilePhotoUrl}
-              onChange={handleChange}
-              placeholder="/src/assets/images/..."
-              className="flex-1 px-4 py-2.5 text-sm bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-indigo-500 font-mono text-xs"
-            />
-          </div>
-        </div>
+        {/* Profile Photo Upload & Preview */}
+        <ImageUploader
+          label="Hero Profile Photo"
+          value={formData.profilePhotoUrl || ''}
+          onChange={(url) => setFormData((prev) => ({ ...prev, profilePhotoUrl: url }))}
+          onOpenMediaLibrary={onOpenMediaLibrary}
+          placeholder="/images/hero_portrait_...jpg"
+          aspectRatio="square"
+          helperText="Upload JPG, PNG, or WebP or choose from Media Library"
+        />
       </div>
 
       {/* Hero Buttons & Calls to Action */}

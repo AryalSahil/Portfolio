@@ -16,10 +16,10 @@ import {
   AlertCircle,
   X,
   Save,
-  Loader2,
-  Image as ImageIcon
+  Loader2
 } from 'lucide-react';
 import { authFetch } from '../../utils/api.js';
+import { ImageUploader } from './ImageUploader.js';
 
 interface ManageWorkViewProps {
   projects: ProjectItem[];
@@ -59,7 +59,7 @@ export const ManageWorkView: React.FC<ManageWorkViewProps> = ({ projects, onRefr
       slug: '',
       description: '',
       longDescription: '',
-      thumbnail: '/src/assets/images/project_cloud_arch_1792149624510.jpg',
+      thumbnail: '/images/project_cloud_arch_1792149624510.jpg',
       tags: ['TypeScript', 'React'],
       liveUrl: '',
       githubUrl: '',
@@ -475,39 +475,16 @@ export const ManageWorkView: React.FC<ManageWorkViewProps> = ({ projects, onRefr
                 />
               </div>
 
-              {/* Thumbnail URL with preview */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-mono uppercase text-slate-400">Thumbnail Image URL *</label>
-                  {onOpenMediaLibrary && (
-                    <button
-                      type="button"
-                      onClick={onOpenMediaLibrary}
-                      className="text-xs text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <ImageIcon className="w-3.5 h-3.5" />
-                      <span>Select from Media Library</span>
-                    </button>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-16 h-12 rounded bg-slate-950 border border-slate-800 overflow-hidden shrink-0">
-                    <img
-                      src={editingProject.thumbnail || '/src/assets/images/project_cloud_arch_1792149624510.jpg'}
-                      alt="Thumbnail Preview"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    value={editingProject.thumbnail || ''}
-                    onChange={(e) => setEditingProject({ ...editingProject, thumbnail: e.target.value })}
-                    required
-                    placeholder="/src/assets/images/..."
-                    className="flex-1 px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-white font-mono focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-              </div>
+              {/* Thumbnail URL with preview and direct upload */}
+              <ImageUploader
+                label="Project Thumbnail Image *"
+                value={editingProject.thumbnail || ''}
+                onChange={(url) => setEditingProject({ ...editingProject, thumbnail: url })}
+                onOpenMediaLibrary={onOpenMediaLibrary}
+                placeholder="/images/project_...jpg"
+                aspectRatio="video"
+                helperText="Upload JPG, PNG, WebP or select from Media Library"
+              />
 
               {/* Tech Tags */}
               <div className="space-y-1">

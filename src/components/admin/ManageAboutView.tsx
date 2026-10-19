@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AboutContent, EducationItem, CareerGoalItem } from '../../types/portfolio.js';
-import { Save, Plus, Trash2, CheckCircle2, AlertCircle, Loader2, Image as ImageIcon, GraduationCap, Target } from 'lucide-react';
+import { Save, Plus, Trash2, CheckCircle2, AlertCircle, Loader2, GraduationCap, Target } from 'lucide-react';
+import { ImageUploader } from './ImageUploader.js';
 
 interface ManageAboutViewProps {
   initialData: AboutContent;
@@ -12,6 +13,12 @@ export const ManageAboutView: React.FC<ManageAboutViewProps> = ({ initialData, o
   const [formData, setFormData] = useState<AboutContent>(initialData);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    }
+  }, [initialData]);
 
   // Paragraphs
   const handleParagraphChange = (index: number, val: string) => {
@@ -43,6 +50,7 @@ export const ManageAboutView: React.FC<ManageAboutViewProps> = ({ initialData, o
       period: '2020 — 2024',
       description: 'Focus area, achievements, and academic milestones.',
       order: (formData.education?.length || 0) + 1,
+      isPublished: true,
     };
     setFormData((prev) => ({ ...prev, education: [...(prev.education || []), newEdu] }));
   };
@@ -212,36 +220,16 @@ export const ManageAboutView: React.FC<ManageAboutViewProps> = ({ initialData, o
         </div>
 
         {/* Profile / Workspace Photo */}
-        <div className="space-y-2 pt-2 border-t border-slate-800/60">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-mono uppercase tracking-wider text-slate-400">Workspace / About Photo URL</label>
-            {onOpenMediaLibrary && (
-              <button
-                type="button"
-                onClick={onOpenMediaLibrary}
-                className="text-xs text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <ImageIcon className="w-3.5 h-3.5" />
-                <span>Media Library</span>
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="w-20 h-14 rounded-lg overflow-hidden border border-slate-800 bg-slate-900 shrink-0">
-              <img
-                src={formData.profilePhotoUrl || '/src/assets/images/about_workspace_1792149624407.jpg'}
-                alt="Workspace Preview"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <input
-              type="text"
-              value={formData.profilePhotoUrl}
-              onChange={(e) => setFormData((prev) => ({ ...prev, profilePhotoUrl: e.target.value }))}
-              placeholder="/src/assets/images/about_workspace_..."
-              className="flex-1 px-4 py-2.5 text-sm bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-indigo-500"
-            />
-          </div>
+        <div className="pt-2 border-t border-slate-800/60">
+          <ImageUploader
+            label="Workspace / About Section Visual"
+            value={formData.profilePhotoUrl || ''}
+            onChange={(url) => setFormData((prev) => ({ ...prev, profilePhotoUrl: url }))}
+            onOpenMediaLibrary={onOpenMediaLibrary}
+            placeholder="/images/about_workspace_...jpg"
+            aspectRatio="wide"
+            helperText="Upload workspace photograph (JPG, PNG, WebP) or select from Library"
+          />
         </div>
 
         {/* Resume Download Config */}

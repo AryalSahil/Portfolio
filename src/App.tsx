@@ -10,6 +10,17 @@ import { Navbar } from './components/public/Navbar.js';
 import { Hero } from './components/public/Hero.js';
 import { About } from './components/public/About.js';
 import { Work } from './components/public/Work.js';
+import { Experience } from './components/public/Experience.js';
+import { SkillsSection } from './components/public/SkillsSection.js';
+import { ServicesSection } from './components/public/ServicesSection.js';
+import { EducationSection } from './components/public/EducationSection.js';
+import { Certifications } from './components/public/Certifications.js';
+import { Achievements } from './components/public/Achievements.js';
+import { ResumeSection } from './components/public/ResumeSection.js';
+import { TestimonialsSection } from './components/public/TestimonialsSection.js';
+import { BlogSection } from './components/public/BlogSection.js';
+import { GithubSection } from './components/public/GithubSection.js';
+import { FaqSection } from './components/public/FaqSection.js';
 import { Contact } from './components/public/Contact.js';
 import { Footer } from './components/public/Footer.js';
 import { FutureSectionRenderer } from './components/public/FutureSectionRenderer.js';
@@ -95,6 +106,11 @@ export default function App() {
         } else {
           setMaintenanceMode(false);
           setPortfolioData(parsed.data);
+          if (parsed.data.seoMetadata?.metaTitle) {
+            document.title = parsed.data.seoMetadata.metaTitle;
+          } else if (parsed.data.settings?.siteTitle) {
+            document.title = parsed.data.settings.siteTitle;
+          }
         }
       }
     } catch (err) {
@@ -112,7 +128,23 @@ export default function App() {
   useEffect(() => {
     if (isAdminRoute) return;
 
-    const sections = ['home', 'about', 'work', 'contact'];
+    const sections = [
+      'home',
+      'about',
+      'experience',
+      'skills',
+      'work',
+      'services',
+      'education',
+      'certifications',
+      'achievements',
+      'resume',
+      'testimonials',
+      'blog',
+      'github',
+      'faq',
+      'contact',
+    ];
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 250;
       for (const sectionId of sections) {
@@ -249,31 +281,116 @@ export default function App() {
       />
 
       <main>
-        {/* 1. Home Section */}
-        <Hero
-          content={portfolioData.home}
-          socialLinks={portfolioData.socialLinks}
-        />
+        {/* 1. Home / Hero Section */}
+        {(!portfolioData.modularSections || portfolioData.modularSections.find((s) => s.slug === 'home')?.isEnabled !== false) && (
+          <Hero
+            content={portfolioData.home}
+            socialLinks={portfolioData.socialLinks}
+          />
+        )}
 
         {/* 2. About Section */}
-        <About
-          content={portfolioData.about}
-          skills={portfolioData.skills}
-          allowResumeDownload={portfolioData.settings.allowResumeDownload}
-        />
+        {(!portfolioData.modularSections || portfolioData.modularSections.find((s) => s.slug === 'about')?.isEnabled !== false) && (
+          <About
+            content={portfolioData.about}
+            skills={portfolioData.skills}
+            allowResumeDownload={portfolioData.settings.allowResumeDownload}
+          />
+        )}
 
-        {/* 3. Work Section */}
-        <Work
-          projects={portfolioData.projects}
-        />
+        {/* 3. Experience & Career History */}
+        {(!portfolioData.modularSections || portfolioData.modularSections.find((s) => s.slug === 'experience')?.isEnabled !== false) && (
+          <Experience
+            experience={portfolioData.experience}
+          />
+        )}
 
-        {/* 4. Contact Section */}
-        <Contact
-          contactEmail={portfolioData.settings.contactEmail}
-          socialLinks={portfolioData.socialLinks}
-        />
+        {/* 4. Skills & Technologies */}
+        {(!portfolioData.modularSections || portfolioData.modularSections.find((s) => s.slug === 'skills')?.isEnabled !== false) && (
+          <SkillsSection
+            skills={portfolioData.skills}
+          />
+        )}
 
-        {/* 5. Future Expansion Section Renderer (Experience, Certifications, Services, etc.) */}
+        {/* 5. Projects / Work & Case Studies */}
+        {(!portfolioData.modularSections || portfolioData.modularSections.find((s) => s.slug === 'work')?.isEnabled !== false) && (
+          <Work
+            projects={portfolioData.projects}
+          />
+        )}
+
+        {/* 6. Specialized Engineering Services */}
+        {(!portfolioData.modularSections || portfolioData.modularSections.find((s) => s.slug === 'services')?.isEnabled !== false) && (
+          <ServicesSection
+            services={portfolioData.services}
+          />
+        )}
+
+        {/* 7. Education & Academics */}
+        {(!portfolioData.modularSections || portfolioData.modularSections.find((s) => s.slug === 'education')?.isEnabled !== false) && (
+          <EducationSection
+            education={portfolioData.education}
+          />
+        )}
+
+        {/* 8. Certifications */}
+        {(!portfolioData.modularSections || portfolioData.modularSections.find((s) => s.slug === 'certifications')?.isEnabled !== false) && (
+          <Certifications
+            certifications={portfolioData.certifications}
+          />
+        )}
+
+        {/* 9. Achievements & Awards */}
+        {(!portfolioData.modularSections || portfolioData.modularSections.find((s) => s.slug === 'achievements')?.isEnabled !== false) && (
+          <Achievements
+            achievements={portfolioData.achievements}
+          />
+        )}
+
+        {/* 10. Resume / CV Download Section */}
+        {(!portfolioData.modularSections || portfolioData.modularSections.find((s) => s.slug === 'resume')?.isEnabled !== false) && (
+          <ResumeSection
+            resume={portfolioData.resume}
+          />
+        )}
+
+        {/* 11. Testimonials & Endorsements */}
+        {(!portfolioData.modularSections || portfolioData.modularSections.find((s) => s.slug === 'testimonials')?.isEnabled !== false) && (
+          <TestimonialsSection
+            testimonials={portfolioData.testimonials}
+          />
+        )}
+
+        {/* 12. Blog & Technical Monographs */}
+        {(!portfolioData.modularSections || portfolioData.modularSections.find((s) => s.slug === 'blog')?.isEnabled !== false) && (
+          <BlogSection
+            posts={portfolioData.blog}
+          />
+        )}
+
+        {/* 13. GitHub & Open Source Activity */}
+        {(!portfolioData.modularSections || portfolioData.modularSections.find((s) => s.slug === 'github')?.isEnabled !== false) && (
+          <GithubSection
+            activity={portfolioData.githubActivity}
+          />
+        )}
+
+        {/* 14. FAQ Section */}
+        {(!portfolioData.modularSections || portfolioData.modularSections.find((s) => s.slug === 'faq')?.isEnabled !== false) && (
+          <FaqSection
+            faq={portfolioData.faq}
+          />
+        )}
+
+        {/* 15. Contact Inquiries */}
+        {(!portfolioData.modularSections || portfolioData.modularSections.find((s) => s.slug === 'contact')?.isEnabled !== false) && (
+          <Contact
+            contactEmail={portfolioData.settings.contactEmail}
+            socialLinks={portfolioData.socialLinks}
+          />
+        )}
+
+        {/* Dynamic Extra Custom Pages */}
         <FutureSectionRenderer
           sections={portfolioData.modularSections}
         />

@@ -131,6 +131,49 @@ export const Contact: React.FC<ContactProps> = ({ contactEmail, socialLinks }) =
                 <p className="text-xs text-slate-500">Available for hybrid engagements and global remote advisories.</p>
               </div>
 
+              {/* Newsletter Subscription */}
+              <div className="pt-4 border-t border-slate-800/60 space-y-3">
+                <div className="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold">Engineering Monograph Dispatch</div>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Join 1,200+ engineers receiving bi-monthly essays on consensus safety, WebGL performance, and design systems.
+                </p>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const target = e.target as HTMLFormElement;
+                    const emailInput = target.elements.namedItem('news_email') as HTMLInputElement;
+                    if (!emailInput?.value) return;
+                    try {
+                      const res = await fetch('/api/newsletter/subscribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: emailInput.value }),
+                      });
+                      const r = await res.json();
+                      alert(r.message || 'Subscribed successfully!');
+                      target.reset();
+                    } catch {
+                      alert('Could not subscribe. Please try again.');
+                    }
+                  }}
+                  className="flex gap-2"
+                >
+                  <input
+                    type="email"
+                    name="news_email"
+                    placeholder="you@company.com"
+                    required
+                    className="flex-1 px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3 py-2 text-xs font-semibold bg-white text-slate-950 rounded-lg hover:bg-slate-200 transition-colors shrink-0 cursor-pointer"
+                  >
+                    Subscribe
+                  </button>
+                </form>
+              </div>
+
               {/* Social Channels */}
               {socialLinks && socialLinks.length > 0 && (
                 <div className="pt-4 border-t border-slate-800/60 space-y-3">

@@ -4,55 +4,104 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
-import { db } from './server/db.ts';
-import type { ProjectItem, SkillItem, SocialLink } from './src/types/portfolio.ts';
+import { db, INITIAL_DATA } from './server/db.ts';
+import type {
+  ProjectItem,
+  SkillItem,
+  SocialLink,
+  EducationItem,
+  ExperienceItem,
+  CertificationItem,
+  AchievementItem,
+  ServiceItem,
+  BlogPost,
+  TestimonialItem,
+  FaqItem,
+  CustomPage,
+  PortfolioData,
+  PublicPortfolioData
+} from './src/types/portfolio.ts';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
-
-// Ensure public uploads directory
 const IS_SERVERLESS = process.env.VERCEL === '1' || process.env.NOW_REGION !== undefined;
+
+// Ensure uploads and images directories exist
 const UPLOADS_DIR = path.resolve(process.cwd(), 'public', 'uploads');
+const IMAGES_DIR = path.resolve(process.cwd(), 'public', 'images');
 try {
-  if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-  }
+  if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  if (!fs.existsSync(IMAGES_DIR)) fs.mkdirSync(IMAGES_DIR, { recursive: true });
 } catch (e) {
-  console.warn('Uploads directory not writable on serverless, using fallback:', e);
+  console.warn('Storage directory initialization warning:', e);
 }
 
 // Global middlewares
-app.use(express.json({ limit: '25mb' }));
-app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+app.use(express.json({ limit: '30mb' }));
+app.use(express.urlencoded({ extended: true, limit: '30mb' }));
 app.use(cookieParser());
-app.use('/uploads', express.static(UPLOADS_DIR));
 
 // Serverless URL normalization
 if (IS_SERVERLESS) {
   app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.url && !req.url.startsWith('/api') && !req.url.startsWith('/uploads') && !req.url.startsWith('/assets') && !req.url.startsWith('/_')) {
+    if (req.url && !req.url.startsWith('/api') && !req.url.startsWith('/uploads') && !req.url.startsWith('/images') && !req.url.startsWith('/assets') && !req.url.startsWith('/_')) {
       req.url = `/api${req.url.startsWith('/') ? '' : '/'}${req.url}`;
     }
     next();
   });
 }
 
+// Static image directories
+app.use('/images', express.static(IMAGES_DIR));
+app.use('/uploads', express.static(UPLOADS_DIR));
+
+// Dynamic image server fallback (checks disk first, then serves from persistent DB base64 if container was recycled)
+app.get(['/uploads/:filename', '/api/uploads/:filename'], (req: Request, res: Response) => {
+  const { filename } = req.params;
+  const filePath = path.join(UPLOADS_DIR, filename);
+
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return res.sendFile(filePath);
+  }
+
+  // Fallback to database mediaLibrary base64 if file on disk was recycled
+  const data = db.getData();
+  const asset = (data.mediaLibrary || []).find((m) => m.name === filename || m.url.endsWith(filename));
+
+  if (asset && asset.dataBase64) {
+    try {
+      const buffer = Buffer.from(asset.dataBase64, 'base64');
+      res.setHeader('Content-Type', asset.mimeType || 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      return res.send(buffer);
+    } catch {
+      // Failed to parse base64
+    }
+  }
+
+  res.status(404).json({ error: 'Image file not found' });
+});
+
 // Root API discovery / health check
 app.get(['/api', '/api/'], (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store');
   res.json({ ok: true, status: 'healthy', service: 'portfolio-api', timestamp: new Date().toISOString() });
 });
 
-// Session Store (persisted to data/sessions.json with TTL)
+// ==========================================
+// SESSION STORE
+// ==========================================
 interface AdminSession {
   token: string;
   createdAt: number;
   expiresAt: number;
 }
 
-const DATA_DIR = IS_SERVERLESS ? path.join('/tmp', 'data') : path.resolve(process.cwd(), 'data');
+const DATA_DIR = path.resolve(process.cwd(), 'data');
 const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
-const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const SESSION_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
 function loadSessions(): Map<string, AdminSession> {
   const map = new Map<string, AdminSession>();
@@ -77,7 +126,12 @@ function persistSessions(map: Map<string, AdminSession>) {
     const list = Array.from(map.values()).filter(s => s.expiresAt > Date.now());
     const tmp = `${SESSIONS_FILE}.tmp.${Date.now()}`;
     fs.writeFileSync(tmp, JSON.stringify(list, null, 2), 'utf-8');
-    fs.renameSync(tmp, SESSIONS_FILE);
+    try {
+      fs.renameSync(tmp, SESSIONS_FILE);
+    } catch {
+      fs.copyFileSync(tmp, SESSIONS_FILE);
+      try { fs.unlinkSync(tmp); } catch {}
+    }
   } catch (err) {
     console.error('Error persisting sessions:', err);
   }
@@ -122,7 +176,7 @@ function requireAuth(req: Request, res: Response, next: NextFunction): void {
   next();
 }
 
-// Simple IP Rate Limiting for Contact Form & Auth
+// IP Rate Limiting for Contact & Auth
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
 function checkRateLimit(ip: string, maxRequests: number, windowMs: number): boolean {
@@ -139,7 +193,6 @@ function checkRateLimit(ip: string, maxRequests: number, windowMs: number): bool
   return true;
 }
 
-// Helper to determine if current connection is HTTPS (direct, forwarded, or cloud run)
 function isConnectionSecure(req: Request): boolean {
   return (
     req.secure ||
@@ -149,14 +202,13 @@ function isConnectionSecure(req: Request): boolean {
 }
 
 // ==========================================
-// 1. AUTHENTICATION ROUTES
+// 1. AUTHENTICATION & SECURITY
 // ==========================================
 
-// Login with password (verified securely against server DB)
 app.post(['/api/auth/login', '/api/auth/login/'], (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
-  if (!checkRateLimit(`login_${clientIp}`, 10, 5 * 60 * 1000)) {
+  if (!checkRateLimit(`login_${clientIp}`, 15, 5 * 60 * 1000)) {
     res.status(429).json({ error: 'Too many login attempts. Please wait 5 minutes before trying again.' });
     return;
   }
@@ -168,10 +220,8 @@ app.post(['/api/auth/login', '/api/auth/login/'], (req: Request, res: Response) 
   }
 
   const data = db.getData();
-  // Password check: strictly validated against stored password hash
   if (password === data.adminPasswordHash || password === '782447') {
     const sessionToken = createSession();
-    // Update last login
     data.adminProfile.lastLogin = new Date().toISOString();
     db.saveData(data);
     db.logActivity('ADMIN_LOGIN', `Administrator logged in successfully from ${clientIp}`, data.adminProfile.name);
@@ -197,7 +247,6 @@ app.post(['/api/auth/login', '/api/auth/login/'], (req: Request, res: Response) 
   res.status(401).json({ error: 'Invalid administrator password.' });
 });
 
-// Logout
 app.post(['/api/auth/logout', '/api/auth/logout/'], (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   const cookieToken = req.cookies?.portfolio_admin_session;
@@ -212,9 +261,8 @@ app.post(['/api/auth/logout', '/api/auth/logout/'], (req: Request, res: Response
   res.json({ success: true, message: 'Logged out successfully' });
 });
 
-// Check Session Status
 app.get(['/api/auth/check', '/api/auth/check/'], (req: Request, res: Response) => {
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store');
   const cookieToken = req.cookies?.portfolio_admin_session;
   const authHeader = req.headers.authorization;
   const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
@@ -228,7 +276,6 @@ app.get(['/api/auth/check', '/api/auth/check/'], (req: Request, res: Response) =
   }
 });
 
-// Change Password
 app.put('/api/admin/security/password', requireAuth, (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body;
   if (!newPassword || newPassword.length < 6) {
@@ -248,7 +295,6 @@ app.put('/api/admin/security/password', requireAuth, (req: Request, res: Respons
   res.json({ success: true, message: 'Password updated successfully' });
 });
 
-// Update Admin Profile
 app.put('/api/admin/profile', requireAuth, (req: Request, res: Response) => {
   const { name, email, avatarUrl } = req.body;
   const data = db.getData();
@@ -264,67 +310,184 @@ app.put('/api/admin/profile', requireAuth, (req: Request, res: Response) => {
 // 2. PUBLIC PORTFOLIO ENDPOINTS
 // ==========================================
 
-// Get Public Portfolio Data (Filtered to published & visible items)
+// Get Public Portfolio Data (Filtered strictly to published & visible items)
 app.get('/api/portfolio', (req: Request, res: Response) => {
+  // Disallow caching on dynamic portfolio data so updates appear instantly on refresh
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   const previewToken = req.query.preview as string | undefined;
+  const cookieToken = req.cookies?.portfolio_admin_session;
+  const authHeader = req.headers.authorization;
+  const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  const isAdmin = validateSession(cookieToken || headerToken);
+
   const data = db.getData();
+  const isPreviewAuthorized = isAdmin || (previewToken && previewToken === data.settings.previewToken);
 
   // If in maintenance mode and no valid preview token is supplied
-  if (data.settings.maintenanceMode && previewToken !== data.settings.previewToken) {
+  if (data.settings.maintenanceMode && !isPreviewAuthorized) {
     res.json({
       maintenance: true,
       siteTitle: data.settings.siteTitle,
       siteDescription: data.settings.siteDescription,
       contactEmail: data.settings.contactEmail,
+      maintenanceMessage: data.settings.maintenanceMessage || 'Under scheduled maintenance.',
     });
     return;
   }
 
-  // Filter only published and visible items
-  const publicProjects = data.projects
-    .filter((p) => p.isPublished)
-    .sort((a, b) => a.order - b.order);
+  // Filter published only (unless authorized preview)
+  const filterPublished = <T extends { isPublished?: boolean; isVisible?: boolean; isEnabled?: boolean }>(items: T[] | undefined): T[] => {
+    if (!items || !Array.isArray(items)) return [];
+    if (isPreviewAuthorized) return items;
+    return items.filter((item) => {
+      if (item.isPublished !== undefined) return item.isPublished;
+      if (item.isVisible !== undefined) return item.isVisible;
+      if (item.isEnabled !== undefined) return item.isEnabled;
+      return true;
+    });
+  };
 
-  const publicSkills = data.skills
-    .filter((s) => s.isVisible)
-    .sort((a, b) => a.order - b.order);
-
-  const publicSocial = data.socialLinks
-    .filter((s) => s.isEnabled)
-    .sort((a, b) => a.order - b.order);
-
-  // Return public package
-  res.json({
+  const publicData: PublicPortfolioData = {
     settings: data.settings,
     headerFooter: data.headerFooter,
     home: data.home,
     about: data.about,
-    skills: publicSkills,
-    projects: publicProjects,
-    socialLinks: publicSocial,
-    modularSections: data.modularSections,
-  });
+    skills: filterPublished(data.skills).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)),
+    projects: filterPublished(data.projects).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)),
+    education: filterPublished(data.education || []).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)),
+    experience: filterPublished(data.experience || []).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)),
+    certifications: filterPublished(data.certifications || []).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)),
+    achievements: filterPublished(data.achievements || []).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)),
+    services: filterPublished(data.services || []).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)),
+    resume: data.resume,
+    blog: filterPublished(data.blog || []).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)),
+    testimonials: filterPublished(data.testimonials || []).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)),
+    faq: filterPublished(data.faq || []).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)),
+    socialLinks: filterPublished(data.socialLinks).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)),
+    customPages: filterPublished(data.customPages || []),
+    githubActivity: data.githubActivity,
+    seoMetadata: data.seoMetadata,
+    modularSections: (data.modularSections || []).sort((a, b) => a.order - b.order),
+  };
+
+  res.json(publicData);
 });
 
-// Submit Contact Message (with honeypot & rate-limiting)
+// Resume Download Tracking Endpoint
+app.post('/api/resume/download', (req: Request, res: Response) => {
+  const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+  const data = db.getData();
+  if (!data.resume) {
+    data.resume = INITIAL_DATA.resume;
+  }
+  data.resume.totalDownloads = (data.resume.totalDownloads || 0) + 1;
+  if (!data.resume.downloadLogs) data.resume.downloadLogs = [];
+  data.resume.downloadLogs.unshift({
+    id: `dl-${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    ip: clientIp,
+  });
+  if (data.resume.downloadLogs.length > 100) {
+    data.resume.downloadLogs = data.resume.downloadLogs.slice(0, 100);
+  }
+  db.saveData(data);
+  db.logActivity('RESUME_DOWNLOADED', `Resume downloaded by visitor from ${clientIp}`, 'Visitor');
+  res.json({ success: true, totalDownloads: data.resume.totalDownloads, url: data.resume.url });
+});
+
+// Newsletter Subscription
+app.post('/api/newsletter/subscribe', (req: Request, res: Response) => {
+  const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+  if (!checkRateLimit(`news_${clientIp}`, 5, 10 * 60 * 1000)) {
+    res.status(429).json({ error: 'Too many subscription attempts. Please wait a few minutes.' });
+    return;
+  }
+
+  const { email } = req.body;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email.trim())) {
+    res.status(400).json({ error: 'Please enter a valid email address.' });
+    return;
+  }
+
+  const data = db.getData();
+  if (!data.newsletterSubscribers) data.newsletterSubscribers = [];
+  const normalized = email.trim().toLowerCase();
+  const existing = data.newsletterSubscribers.find((s) => s.email.toLowerCase() === normalized);
+
+  if (existing) {
+    if (existing.status === 'unsubscribed') {
+      existing.status = 'active';
+      db.saveData(data);
+      res.json({ success: true, message: 'Your subscription has been reactivated!' });
+      return;
+    }
+    res.json({ success: true, message: 'You are already subscribed to updates!' });
+    return;
+  }
+
+  const newSub = {
+    id: `sub-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    email: normalized,
+    subscribedAt: new Date().toISOString(),
+    status: 'active' as const,
+  };
+  data.newsletterSubscribers.unshift(newSub);
+  db.saveData(data);
+  db.logActivity('NEWSLETTER_SUBSCRIBED', `New subscriber: ${normalized}`, 'Visitor');
+  res.json({ success: true, message: 'Thank you for subscribing!' });
+});
+
+// Page View & Section Analytics Tracking
+app.post('/api/analytics/record', (req: Request, res: Response) => {
+  const { section, isUnique } = req.body;
+  const data = db.getData();
+  if (!data.analytics) data.analytics = INITIAL_DATA.analytics;
+
+  data.analytics.pageViews = (data.analytics.pageViews || 0) + 1;
+  if (isUnique) {
+    data.analytics.uniqueVisitors = (data.analytics.uniqueVisitors || 0) + 1;
+  }
+
+  if (section && typeof section === 'string') {
+    if (!data.analytics.sectionViews) data.analytics.sectionViews = {};
+    data.analytics.sectionViews[section] = (data.analytics.sectionViews[section] || 0) + 1;
+  }
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  if (!data.analytics.dailyVisits) data.analytics.dailyVisits = [];
+  const todayEntry = data.analytics.dailyVisits.find((d) => d.date === todayStr);
+  if (todayEntry) {
+    todayEntry.views += 1;
+  } else {
+    data.analytics.dailyVisits.push({ date: todayStr, views: 1 });
+    if (data.analytics.dailyVisits.length > 30) {
+      data.analytics.dailyVisits = data.analytics.dailyVisits.slice(-30);
+    }
+  }
+
+  db.saveData(data);
+  res.json({ success: true });
+});
+
+// Contact Form
 app.post('/api/contact', (req: Request, res: Response) => {
   const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
 
-  // 1. Anti-spam rate limiting: max 5 messages per 10 mins per IP
   if (!checkRateLimit(`contact_${clientIp}`, 5, 10 * 60 * 1000)) {
     res.status(429).json({ error: 'You have sent multiple messages recently. Please wait a few minutes before submitting again.' });
     return;
   }
 
-  // 2. Anti-spam honeypot verification
   const { name, email, subject, message, website_fax_hp } = req.body;
   if (website_fax_hp) {
-    // Bot detected (filled in invisible honeypot)
     res.status(200).json({ success: true, message: 'Message received.' });
     return;
   }
 
-  // 3. Input validations
   if (!name || typeof name !== 'string' || name.trim().length < 2) {
     res.status(400).json({ error: 'Please enter your name (at least 2 characters).' });
     return;
@@ -366,19 +529,21 @@ app.post('/api/contact', (req: Request, res: Response) => {
 });
 
 // ==========================================
-// 3. ADMIN MANAGEMENT ROUTES
+// 3. ADMIN DASHBOARD & CORE DATA
 // ==========================================
 
-// Dashboard Metrics
 app.get('/api/admin/dashboard', requireAuth, (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store');
   const data = db.getData();
   const totalProjects = data.projects.length;
   const publishedProjects = data.projects.filter((p) => p.isPublished).length;
   const draftProjects = totalProjects - publishedProjects;
   const totalMessages = data.contactMessages.length;
   const unreadMessages = data.contactMessages.filter((m) => m.status === 'unread').length;
-  const mediaCount = data.mediaLibrary.length;
-  const recentActivities = data.activityLogs.slice(0, 10);
+  const mediaCount = (data.mediaLibrary || []).length;
+  const subscribersCount = (data.newsletterSubscribers || []).filter((s) => s.status === 'active').length;
+  const resumeDownloads = data.resume?.totalDownloads || 0;
+  const recentActivities = (data.activityLogs || []).slice(0, 10);
 
   res.json({
     metrics: {
@@ -388,23 +553,26 @@ app.get('/api/admin/dashboard', requireAuth, (req: Request, res: Response) => {
       totalMessages,
       unreadMessages,
       mediaCount,
+      subscribersCount,
+      resumeDownloads,
+      pageViews: data.analytics?.pageViews || 0,
+      uniqueVisitors: data.analytics?.uniqueVisitors || 0,
     },
     recentActivities,
     previewUrl: `/?preview=${data.settings.previewToken}`,
   });
 });
 
-// Complete Admin Database
 app.get('/api/admin/all-data', requireAuth, (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   const data = db.getData();
-  // Don't send password hash
   const { adminPasswordHash, ...safeData } = data;
   res.json(safeData);
 });
 
-// Manage Settings & Header/Footer
+// Settings & Header/Footer
 app.put('/api/admin/settings', requireAuth, (req: Request, res: Response) => {
-  const { settings, headerFooter } = req.body;
+  const { settings, headerFooter, seoMetadata, themeSettings } = req.body;
   const data = db.getData();
   if (settings) {
     data.settings = { ...data.settings, ...settings };
@@ -412,18 +580,18 @@ app.put('/api/admin/settings', requireAuth, (req: Request, res: Response) => {
   if (headerFooter) {
     data.headerFooter = { ...data.headerFooter, ...headerFooter };
   }
+  if (seoMetadata) {
+    data.seoMetadata = { ...data.seoMetadata, ...seoMetadata };
+  }
   db.saveData(data);
-  db.logActivity('SETTINGS_UPDATED', 'Website configuration, theme, or navigation updated', data.adminProfile.name);
-  res.json({ success: true, settings: data.settings, headerFooter: data.headerFooter });
+  db.logActivity('SETTINGS_UPDATED', 'Website configuration, theme, or SEO metadata updated', data.adminProfile.name);
+  res.json({ success: true, settings: data.settings, headerFooter: data.headerFooter, seoMetadata: data.seoMetadata });
 });
 
-// Manage Home Section
+// Home Section
 app.put('/api/admin/home', requireAuth, (req: Request, res: Response) => {
   const { home } = req.body;
-  if (!home) {
-    res.status(400).json({ error: 'Home content payload required' });
-    return;
-  }
+  if (!home) return res.status(400).json({ error: 'Home content required' });
   const data = db.getData();
   data.home = { ...data.home, ...home };
   db.saveData(data);
@@ -431,18 +599,28 @@ app.put('/api/admin/home', requireAuth, (req: Request, res: Response) => {
   res.json({ success: true, home: data.home });
 });
 
-// Manage About Section
+// About Section
 app.put('/api/admin/about', requireAuth, (req: Request, res: Response) => {
   const { about } = req.body;
-  if (!about) {
-    res.status(400).json({ error: 'About content payload required' });
-    return;
-  }
+  if (!about) return res.status(400).json({ error: 'About content required' });
   const data = db.getData();
   data.about = { ...data.about, ...about };
   db.saveData(data);
-  db.logActivity('ABOUT_UPDATED', 'About biography, education, and career milestones updated', data.adminProfile.name);
+  db.logActivity('ABOUT_UPDATED', 'About biography, workspace, and career milestones updated', data.adminProfile.name);
   res.json({ success: true, about: data.about });
+});
+
+// Resume Section
+app.put('/api/admin/resume', requireAuth, (req: Request, res: Response) => {
+  const { resume } = req.body;
+  if (!resume) return res.status(400).json({ error: 'Resume payload required' });
+  const data = db.getData();
+  data.resume = { ...data.resume, ...resume };
+  data.settings.resumeUrl = resume.url || data.settings.resumeUrl;
+  data.settings.allowResumeDownload = resume.allowDownload !== undefined ? resume.allowDownload : data.settings.allowResumeDownload;
+  db.saveData(data);
+  db.logActivity('RESUME_CONFIG_UPDATED', `Resume document settings updated: ${resume.fileName || 'CV'}`, data.adminProfile.name);
+  res.json({ success: true, resume: data.resume });
 });
 
 // ==========================================
@@ -450,6 +628,7 @@ app.put('/api/admin/about', requireAuth, (req: Request, res: Response) => {
 // ==========================================
 
 app.get('/api/admin/projects', requireAuth, (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store');
   const data = db.getData();
   res.json(data.projects);
 });
@@ -457,8 +636,7 @@ app.get('/api/admin/projects', requireAuth, (req: Request, res: Response) => {
 app.post('/api/admin/projects', requireAuth, (req: Request, res: Response) => {
   const project: Partial<ProjectItem> = req.body;
   if (!project.title || !project.description) {
-    res.status(400).json({ error: 'Title and description are required' });
-    return;
+    return res.status(400).json({ error: 'Title and description are required' });
   }
 
   const data = db.getData();
@@ -470,7 +648,7 @@ app.post('/api/admin/projects', requireAuth, (req: Request, res: Response) => {
     subtitle: project.subtitle?.trim() || '',
     description: project.description.trim(),
     longDescription: project.longDescription?.trim() || '',
-    thumbnail: project.thumbnail?.trim() || '/src/assets/images/project_cloud_arch_1792149624510.jpg',
+    thumbnail: project.thumbnail?.trim() || '/images/project_cloud_arch_1792149624510.jpg',
     galleryImages: project.galleryImages || [],
     tags: project.tags && Array.isArray(project.tags) ? project.tags : ['TypeScript'],
     liveUrl: project.liveUrl?.trim() || '',
@@ -495,8 +673,7 @@ app.put('/api/admin/projects/:id', requireAuth, (req: Request, res: Response) =>
   const index = data.projects.findIndex((p) => p.id === id);
 
   if (index === -1) {
-    res.status(404).json({ error: 'Project not found' });
-    return;
+    return res.status(404).json({ error: 'Project not found' });
   }
 
   data.projects[index] = {
@@ -514,10 +691,7 @@ app.delete('/api/admin/projects/:id', requireAuth, (req: Request, res: Response)
   const { id } = req.params;
   const data = db.getData();
   const project = data.projects.find((p) => p.id === id);
-  if (!project) {
-    res.status(404).json({ error: 'Project not found' });
-    return;
-  }
+  if (!project) return res.status(404).json({ error: 'Project not found' });
 
   data.projects = data.projects.filter((p) => p.id !== id);
   db.saveData(data);
@@ -529,10 +703,7 @@ app.post('/api/admin/projects/:id/duplicate', requireAuth, (req: Request, res: R
   const { id } = req.params;
   const data = db.getData();
   const source = data.projects.find((p) => p.id === id);
-  if (!source) {
-    res.status(404).json({ error: 'Project not found' });
-    return;
-  }
+  if (!source) return res.status(404).json({ error: 'Project not found' });
 
   const maxOrder = data.projects.reduce((max, p) => Math.max(max, p.order || 0), 0);
   const duplicate: ProjectItem = {
@@ -540,7 +711,7 @@ app.post('/api/admin/projects/:id/duplicate', requireAuth, (req: Request, res: R
     id: `proj-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     title: `${source.title} (Copy)`,
     slug: `${source.slug}-copy`,
-    isPublished: false, // duplicate starts as draft
+    isPublished: false,
     order: maxOrder + 1,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -554,167 +725,219 @@ app.post('/api/admin/projects/:id/duplicate', requireAuth, (req: Request, res: R
 
 app.put('/api/admin/projects/reorder', requireAuth, (req: Request, res: Response) => {
   const { projectIds } = req.body;
-  if (!Array.isArray(projectIds)) {
-    res.status(400).json({ error: 'projectIds array required' });
-    return;
-  }
+  if (!Array.isArray(projectIds)) return res.status(400).json({ error: 'projectIds array required' });
 
   const data = db.getData();
   projectIds.forEach((id: string, index: number) => {
     const proj = data.projects.find((p) => p.id === id);
-    if (proj) {
-      proj.order = index + 1;
-    }
+    if (proj) proj.order = index + 1;
   });
 
   data.projects.sort((a, b) => a.order - b.order);
   db.saveData(data);
-  db.logActivity('PROJECTS_REORDERED', 'Project display sequence updated', data.adminProfile.name);
   res.json({ success: true, projects: data.projects });
 });
 
 // ==========================================
-// 5. SKILLS MANAGEMENT
+// 5. EXPERIENCE, EDUCATION, CERTIFICATIONS, ACHIEVEMENTS, SERVICES
 // ==========================================
 
-app.get('/api/admin/skills', requireAuth, (req: Request, res: Response) => {
-  const data = db.getData();
-  res.json(data.skills);
-});
+// Generic helper generator for array collections
+function setupCrudRoutes<T extends { id: string; order?: number }>(
+  collectionKey: keyof PortfolioData,
+  itemPrefix: string,
+  logTag: string
+) {
+  const collectionName = String(collectionKey);
 
-app.post('/api/admin/skills', requireAuth, (req: Request, res: Response) => {
-  const skill: Partial<SkillItem> = req.body;
-  if (!skill.name) {
-    res.status(400).json({ error: 'Skill name required' });
-    return;
-  }
-  const data = db.getData();
-  const maxOrder = data.skills.reduce((max, s) => Math.max(max, s.order || 0), 0);
-  const newSkill: SkillItem = {
-    id: `sk-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
-    name: skill.name.trim(),
-    category: skill.category || 'Frontend',
-    proficiency: typeof skill.proficiency === 'number' ? skill.proficiency : 85,
-    order: maxOrder + 1,
-    isVisible: skill.isVisible !== undefined ? Boolean(skill.isVisible) : true,
-  };
-
-  data.skills.push(newSkill);
-  db.saveData(data);
-  db.logActivity('SKILL_ADDED', `Added skill "${newSkill.name}" (${newSkill.category})`, data.adminProfile.name);
-  res.json({ success: true, skill: newSkill });
-});
-
-app.put('/api/admin/skills/:id', requireAuth, (req: Request, res: Response) => {
-  const { id } = req.params;
-  const updates: Partial<SkillItem> = req.body;
-  const data = db.getData();
-  const index = data.skills.findIndex((s) => s.id === id);
-  if (index === -1) {
-    res.status(404).json({ error: 'Skill not found' });
-    return;
-  }
-  data.skills[index] = { ...data.skills[index], ...updates };
-  db.saveData(data);
-  db.logActivity('SKILL_UPDATED', `Updated skill "${data.skills[index].name}"`, data.adminProfile.name);
-  res.json({ success: true, skill: data.skills[index] });
-});
-
-app.delete('/api/admin/skills/:id', requireAuth, (req: Request, res: Response) => {
-  const { id } = req.params;
-  const data = db.getData();
-  const skill = data.skills.find((s) => s.id === id);
-  if (!skill) {
-    res.status(404).json({ error: 'Skill not found' });
-    return;
-  }
-  data.skills = data.skills.filter((s) => s.id !== id);
-  db.saveData(data);
-  db.logActivity('SKILL_DELETED', `Deleted skill "${skill.name}"`, data.adminProfile.name);
-  res.json({ success: true });
-});
-
-app.put('/api/admin/skills/reorder', requireAuth, (req: Request, res: Response) => {
-  const { skillIds } = req.body;
-  if (!Array.isArray(skillIds)) {
-    res.status(400).json({ error: 'skillIds array required' });
-    return;
-  }
-  const data = db.getData();
-  skillIds.forEach((id: string, index: number) => {
-    const s = data.skills.find((item) => item.id === id);
-    if (s) s.order = index + 1;
+  // GET
+  app.get(`/api/admin/${collectionName}`, requireAuth, (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const data = db.getData();
+    res.json(((data as any)[collectionKey] as any[]) || []);
   });
-  data.skills.sort((a, b) => a.order - b.order);
-  db.saveData(data);
-  res.json({ success: true, skills: data.skills });
-});
+
+  // POST
+  app.post(`/api/admin/${collectionName}`, requireAuth, (req: Request, res: Response) => {
+    const item = req.body;
+    const data = db.getData();
+    if (!Array.isArray((data as any)[collectionKey])) (data as any)[collectionKey] = [];
+    const list = (data as any)[collectionKey] as any[];
+    const maxOrder = list.reduce((max, x) => Math.max(max, x.order || 0), 0);
+
+    const newItem = {
+      ...item,
+      id: `${itemPrefix}-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+      order: maxOrder + 1,
+    };
+    list.push(newItem);
+    db.saveData(data);
+    db.logActivity(`${logTag}_ADDED`, `Added new item to ${collectionName}`, data.adminProfile.name);
+    res.json({ success: true, item: newItem });
+  });
+
+  // PUT
+  app.put(`/api/admin/${collectionName}/:id`, requireAuth, (req: Request, res: Response) => {
+    const { id } = req.params;
+    const updates = req.body;
+    const data = db.getData();
+    const list = ((data as any)[collectionKey] as any[]) || [];
+    const index = list.findIndex((x) => x.id === id);
+    if (index === -1) return res.status(404).json({ error: 'Item not found' });
+
+    list[index] = { ...list[index], ...updates };
+    db.saveData(data);
+    db.logActivity(`${logTag}_UPDATED`, `Updated item in ${collectionName} (${id})`, data.adminProfile.name);
+    res.json({ success: true, item: list[index] });
+  });
+
+  // DELETE
+  app.delete(`/api/admin/${collectionName}/:id`, requireAuth, (req: Request, res: Response) => {
+    const { id } = req.params;
+    const data = db.getData();
+    const list = ((data as any)[collectionKey] as any[]) || [];
+    (data as any)[collectionKey] = list.filter((x) => x.id !== id);
+    db.saveData(data);
+    db.logActivity(`${logTag}_DELETED`, `Deleted item from ${collectionName} (${id})`, data.adminProfile.name);
+    res.json({ success: true });
+  });
+
+  // REORDER
+  app.put(`/api/admin/${collectionName}/reorder`, requireAuth, (req: Request, res: Response) => {
+    const { ids } = req.body;
+    if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids array required' });
+    const data = db.getData();
+    const list = ((data as any)[collectionKey] as any[]) || [];
+    ids.forEach((id: string, index: number) => {
+      const item = list.find((x) => x.id === id);
+      if (item) item.order = index + 1;
+    });
+    list.sort((a, b) => (a.order || 0) - (b.order || 0));
+    db.saveData(data);
+    res.json({ success: true, items: list });
+  });
+}
+
+setupCrudRoutes('skills', 'sk', 'SKILL');
+setupCrudRoutes('education', 'edu', 'EDUCATION');
+setupCrudRoutes('experience', 'exp', 'EXPERIENCE');
+setupCrudRoutes('certifications', 'cert', 'CERTIFICATION');
+setupCrudRoutes('achievements', 'ach', 'ACHIEVEMENT');
+setupCrudRoutes('services', 'srv', 'SERVICE');
+setupCrudRoutes('blog', 'blog', 'BLOG_POST');
+setupCrudRoutes('testimonials', 'test', 'TESTIMONIAL');
+setupCrudRoutes('faq', 'faq', 'FAQ');
+setupCrudRoutes('socialLinks', 'soc', 'SOCIAL_LINK');
+setupCrudRoutes('customPages', 'page', 'CUSTOM_PAGE');
 
 // ==========================================
-// 6. SOCIAL LINKS MANAGEMENT
+// 6. MEDIA LIBRARY & IMAGE UPLOADS
 // ==========================================
 
-app.get('/api/admin/social-links', requireAuth, (req: Request, res: Response) => {
+app.get('/api/admin/media', requireAuth, (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store');
   const data = db.getData();
-  res.json(data.socialLinks);
+  // Strip out heavy base64 strings when listing gallery to keep payload lean
+  const leanList = (data.mediaLibrary || []).map(({ dataBase64, ...rest }) => rest);
+  res.json(leanList);
 });
 
-app.post('/api/admin/social-links', requireAuth, (req: Request, res: Response) => {
-  const link: Partial<SocialLink> = req.body;
-  if (!link.label || !link.url) {
-    res.status(400).json({ error: 'Label and URL required' });
-    return;
+// Upload Media Asset
+app.post('/api/admin/media/upload', requireAuth, (req: Request, res: Response) => {
+  const { fileName, mimeType, dataBase64, size } = req.body;
+  if (!fileName || !dataBase64) {
+    return res.status(400).json({ error: 'File name and Base64 data are required' });
   }
-  const data = db.getData();
-  const maxOrder = data.socialLinks.reduce((max, s) => Math.max(max, s.order || 0), 0);
-  const newLink: SocialLink = {
-    id: `soc-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
-    platform: link.platform || 'Custom',
-    label: link.label.trim(),
-    url: link.url.trim(),
-    isEnabled: link.isEnabled !== undefined ? Boolean(link.isEnabled) : true,
-    order: maxOrder + 1,
-  };
-  data.socialLinks.push(newLink);
-  db.saveData(data);
-  db.logActivity('SOCIAL_LINK_ADDED', `Added social link for ${newLink.label}`, data.adminProfile.name);
-  res.json({ success: true, link: newLink });
+
+  // File type validation: JPG, JPEG, PNG, WEBP, SVG, GIF, PDF
+  const allowedMime = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/svg+xml',
+    'image/gif',
+    'application/pdf',
+  ];
+  const detectedMime = mimeType || 'image/jpeg';
+  if (!allowedMime.includes(detectedMime) && !fileName.match(/\.(jpg|jpeg|png|webp|svg|gif|pdf)$/i)) {
+    return res.status(400).json({ error: 'Unsupported file format. Please upload JPG, PNG, WebP, SVG, or PDF.' });
+  }
+
+  // Size limit validation (15MB)
+  if (size && size > 15 * 1024 * 1024) {
+    return res.status(400).json({ error: 'File size exceeds maximum 15MB limit.' });
+  }
+
+  const safeBase = path.basename(fileName).replace(/[^a-zA-Z0-9._-]/g, '_');
+  const uniqueName = `${Date.now()}_${safeBase}`;
+  const filePath = path.join(UPLOADS_DIR, uniqueName);
+
+  try {
+    const buffer = Buffer.from(dataBase64, 'base64');
+    // Save to disk
+    try {
+      fs.writeFileSync(filePath, buffer);
+    } catch (fsErr) {
+      console.warn('File write to disk failed, relying on database base64 storage:', fsErr);
+    }
+
+    const assetUrl = `/uploads/${uniqueName}`;
+    const newAsset = {
+      id: `med-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      name: uniqueName,
+      originalName: fileName,
+      url: assetUrl,
+      mimeType: detectedMime,
+      size: size || buffer.length,
+      uploadedAt: new Date().toISOString(),
+      dataBase64, // Permanently stored in DB so it never disappears on serverless or cold-starts
+    };
+
+    const data = db.getData();
+    if (!data.mediaLibrary) data.mediaLibrary = [];
+    data.mediaLibrary.unshift(newAsset);
+    db.saveData(data);
+    db.logActivity('MEDIA_UPLOADED', `Uploaded media asset "${fileName}" (${Math.round((size || buffer.length) / 1024)} KB)`, data.adminProfile.name);
+
+    const { dataBase64: _, ...clientAsset } = newAsset;
+    res.json({ success: true, asset: clientAsset });
+  } catch (err: any) {
+    console.error('File write error:', err);
+    res.status(500).json({ error: 'Failed to write media asset to persistent storage' });
+  }
 });
 
-app.put('/api/admin/social-links/:id', requireAuth, (req: Request, res: Response) => {
+app.delete('/api/admin/media/:id', requireAuth, (req: Request, res: Response) => {
   const { id } = req.params;
-  const updates: Partial<SocialLink> = req.body;
   const data = db.getData();
-  const index = data.socialLinks.findIndex((s) => s.id === id);
-  if (index === -1) {
-    res.status(404).json({ error: 'Social link not found' });
-    return;
-  }
-  data.socialLinks[index] = { ...data.socialLinks[index], ...updates };
-  db.saveData(data);
-  db.logActivity('SOCIAL_LINK_UPDATED', `Updated social link ${data.socialLinks[index].label}`, data.adminProfile.name);
-  res.json({ success: true, link: data.socialLinks[index] });
-});
+  const asset = (data.mediaLibrary || []).find((m) => m.id === id);
+  if (!asset) return res.status(404).json({ error: 'Media asset not found' });
 
-app.delete('/api/admin/social-links/:id', requireAuth, (req: Request, res: Response) => {
-  const { id } = req.params;
-  const data = db.getData();
-  const link = data.socialLinks.find((s) => s.id === id);
-  if (!link) {
-    res.status(404).json({ error: 'Social link not found' });
-    return;
+  // Delete physical file from disk if present
+  if (asset.url.startsWith('/uploads/')) {
+    const filename = path.basename(asset.url);
+    const fullPath = path.join(UPLOADS_DIR, filename);
+    if (fs.existsSync(fullPath)) {
+      try {
+        fs.unlinkSync(fullPath);
+      } catch (err) {
+        console.warn('Could not unlink disk file:', err);
+      }
+    }
   }
-  data.socialLinks = data.socialLinks.filter((s) => s.id !== id);
+
+  data.mediaLibrary = data.mediaLibrary.filter((m) => m.id !== id);
   db.saveData(data);
-  db.logActivity('SOCIAL_LINK_DELETED', `Deleted social link ${link.label}`, data.adminProfile.name);
+  db.logActivity('MEDIA_DELETED', `Deleted media asset "${asset.originalName}"`, data.adminProfile.name);
   res.json({ success: true });
 });
 
 // ==========================================
-// 7. CONTACT MESSAGES MANAGEMENT
+// 7. CONTACT MESSAGES & NEWSLETTER
 // ==========================================
 
 app.get('/api/admin/messages', requireAuth, (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store');
   const { status, query } = req.query;
   const data = db.getData();
   let list = [...data.contactMessages];
@@ -741,129 +964,115 @@ app.put('/api/admin/messages/:id/status', requireAuth, (req: Request, res: Respo
   const { id } = req.params;
   const { status } = req.body;
   if (!['unread', 'read', 'archived'].includes(status)) {
-    res.status(400).json({ error: 'Invalid status' });
-    return;
+    return res.status(400).json({ error: 'Invalid status' });
   }
 
   const data = db.getData();
   const message = data.contactMessages.find((m) => m.id === id);
-  if (!message) {
-    res.status(404).json({ error: 'Message not found' });
-    return;
-  }
+  if (!message) return res.status(404).json({ error: 'Message not found' });
 
   message.status = status;
   db.saveData(data);
-  db.logActivity('MESSAGE_STATUS_CHANGED', `Changed message "${message.subject}" status to ${status}`, data.adminProfile.name);
   res.json({ success: true, message });
 });
 
 app.delete('/api/admin/messages/:id', requireAuth, (req: Request, res: Response) => {
   const { id } = req.params;
   const data = db.getData();
-  const msg = data.contactMessages.find((m) => m.id === id);
-  if (!msg) {
-    res.status(404).json({ error: 'Message not found' });
-    return;
-  }
   data.contactMessages = data.contactMessages.filter((m) => m.id !== id);
   db.saveData(data);
-  db.logActivity('MESSAGE_DELETED', `Deleted message from ${msg.name} ("${msg.subject}")`, data.adminProfile.name);
   res.json({ success: true });
 });
 
-// ==========================================
-// 8. MEDIA LIBRARY
-// ==========================================
-
-app.get('/api/admin/media', requireAuth, (req: Request, res: Response) => {
+app.get('/api/admin/subscribers', requireAuth, (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store');
   const data = db.getData();
-  res.json(data.mediaLibrary);
+  res.json(data.newsletterSubscribers || []);
 });
 
-// Upload media file via Base64 payload
-app.post('/api/admin/media/upload', requireAuth, (req: Request, res: Response) => {
-  const { fileName, mimeType, dataBase64, size } = req.body;
-  if (!fileName || !dataBase64) {
-    res.status(400).json({ error: 'File name and Base64 data required' });
-    return;
-  }
-
-  // Sanitize filename and create unique stored name
-  const safeBase = path.basename(fileName).replace(/[^a-zA-Z0-9._-]/g, '_');
-  const uniqueName = `${Date.now()}_${safeBase}`;
-  const filePath = path.join(UPLOADS_DIR, uniqueName);
-
-  try {
-    const buffer = Buffer.from(dataBase64, 'base64');
-    fs.writeFileSync(filePath, buffer);
-
-    const assetUrl = `/uploads/${uniqueName}`;
-    const newAsset = {
-      id: `med-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      name: uniqueName,
-      originalName: fileName,
-      url: assetUrl,
-      mimeType: mimeType || 'image/jpeg',
-      size: size || buffer.length,
-      uploadedAt: new Date().toISOString(),
-    };
-
-    const data = db.getData();
-    data.mediaLibrary.unshift(newAsset);
-    db.saveData(data);
-    db.logActivity('MEDIA_UPLOADED', `Uploaded media asset "${fileName}" (${Math.round((size || buffer.length) / 1024)} KB)`, data.adminProfile.name);
-
-    res.json({ success: true, asset: newAsset });
-  } catch (err: any) {
-    console.error('File write error:', err);
-    res.status(500).json({ error: 'Failed to write media asset to storage' });
-  }
-});
-
-app.delete('/api/admin/media/:id', requireAuth, (req: Request, res: Response) => {
+app.delete('/api/admin/subscribers/:id', requireAuth, (req: Request, res: Response) => {
   const { id } = req.params;
   const data = db.getData();
-  const asset = data.mediaLibrary.find((m) => m.id === id);
-  if (!asset) {
-    res.status(404).json({ error: 'Media asset not found' });
-    return;
-  }
-
-  // Attempt to delete physical file if in uploads
-  if (asset.url.startsWith('/uploads/')) {
-    const filename = path.basename(asset.url);
-    const fullPath = path.join(UPLOADS_DIR, filename);
-    if (fs.existsSync(fullPath)) {
-      try {
-        fs.unlinkSync(fullPath);
-      } catch (err) {
-        console.error('Failed to unlink file:', err);
-      }
-    }
-  }
-
-  data.mediaLibrary = data.mediaLibrary.filter((m) => m.id !== id);
+  data.newsletterSubscribers = (data.newsletterSubscribers || []).filter((s) => s.id !== id);
   db.saveData(data);
-  db.logActivity('MEDIA_DELETED', `Deleted media asset "${asset.originalName}"`, data.adminProfile.name);
   res.json({ success: true });
 });
 
+// Notifications preferences
+app.get('/api/admin/notifications', requireAuth, (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const data = db.getData();
+  res.json(data.notificationSettings || INITIAL_DATA.notificationSettings);
+});
+
+app.put('/api/admin/notifications', requireAuth, (req: Request, res: Response) => {
+  const { notifications } = req.body;
+  const data = db.getData();
+  data.notificationSettings = { ...data.notificationSettings, ...notifications };
+  db.saveData(data);
+  res.json({ success: true, notificationSettings: data.notificationSettings });
+});
+
 // ==========================================
-// 9. ACTIVITY LOGS & FUTURE SECTIONS
+// 8. DATABASE BACKUP, RESTORE & AUDIT LOGS
 // ==========================================
 
 app.get('/api/admin/logs', requireAuth, (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store');
   const data = db.getData();
-  res.json(data.activityLogs);
+  res.json(data.activityLogs || []);
 });
 
-// Modular sections toggle for future expansion
+app.delete('/api/admin/logs', requireAuth, (req: Request, res: Response) => {
+  const data = db.getData();
+  data.activityLogs = [];
+  db.saveData(data);
+  res.json({ success: true, message: 'Activity logs cleared' });
+});
+
+app.get('/api/admin/database/backup', requireAuth, (req: Request, res: Response) => {
+  const data = db.getData();
+  const { adminPasswordHash, ...safeBackup } = data;
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', `attachment; filename="portfolio_backup_${new Date().toISOString().split('T')[0]}.json"`);
+  res.send(JSON.stringify(safeBackup, null, 2));
+});
+
+app.post('/api/admin/database/restore', requireAuth, (req: Request, res: Response) => {
+  const { backupData } = req.body;
+  if (!backupData || typeof backupData !== 'object') {
+    return res.status(400).json({ error: 'Invalid backup JSON payload' });
+  }
+
+  const current = db.getData();
+  const restored: PortfolioData = {
+    ...INITIAL_DATA,
+    ...backupData,
+    adminPasswordHash: current.adminPasswordHash, // Preserve existing password
+    adminProfile: backupData.adminProfile || current.adminProfile,
+  };
+
+  db.saveData(restored);
+  db.logActivity('DATABASE_RESTORED', 'Restored portfolio database from administrative backup', current.adminProfile.name);
+  res.json({ success: true, message: 'Database restored successfully' });
+});
+
+app.post('/api/admin/database/reset', requireAuth, (req: Request, res: Response) => {
+  const current = db.getData();
+  const resetData: PortfolioData = {
+    ...INITIAL_DATA,
+    adminPasswordHash: current.adminPasswordHash,
+  };
+  db.saveData(resetData);
+  db.logActivity('DATABASE_RESET', 'Reset portfolio database to default seed records', current.adminProfile.name);
+  res.json({ success: true, message: 'Database reset to default seed records' });
+});
+
+// Modular sections toggle
 app.put('/api/admin/modular-sections', requireAuth, (req: Request, res: Response) => {
   const { sections } = req.body;
   if (!Array.isArray(sections)) {
-    res.status(400).json({ error: 'sections array required' });
-    return;
+    return res.status(400).json({ error: 'sections array required' });
   }
   const data = db.getData();
   data.modularSections = sections;
@@ -873,15 +1082,13 @@ app.put('/api/admin/modular-sections', requireAuth, (req: Request, res: Response
 });
 
 // ==========================================
-// 10. API 404 CATCH-ALL & ERROR HANDLERS
+// 9. API 404 CATCH-ALL & ERROR HANDLERS
 // ==========================================
 
-// Ensure unmatched /api routes always return JSON 404 instead of HTML
 app.all('/api/*', (req: Request, res: Response) => {
   res.status(404).json({ error: `API route not found: ${req.method} ${req.originalUrl}` });
 });
 
-// Global API error handler ensuring JSON responses for unexpected server errors
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('Unhandled server error on route:', req.originalUrl, err);
   if (req.path.startsWith('/api')) {
@@ -895,7 +1102,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 });
 
 // ==========================================
-// 11. VITE DEV SERVER OR STATIC SERVE
+// 10. VITE DEV SERVER OR STATIC SERVE
 // ==========================================
 
 async function setupServer() {
@@ -919,8 +1126,6 @@ async function setupServer() {
   });
 }
 
-// In standard environments (Node / Docker / Cloud Run), start the HTTP server.
-// In Vercel serverless, app is exported and managed by the Vercel Lambda handler.
 if (!process.env.VERCEL) {
   setupServer().catch((err) => {
     console.error('Failed to start server:', err);

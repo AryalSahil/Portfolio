@@ -117,7 +117,7 @@ export const Hero: React.FC<HeroProps> = ({ content, socialLinks }) => {
             <div className="relative w-full max-w-[380px] aspect-square rounded-2xl overflow-hidden border border-slate-800/90 bg-gradient-to-b from-slate-800/30 to-slate-950/80 shadow-2xl p-2 group">
               <div className="w-full h-full rounded-xl overflow-hidden relative">
                 <img
-                  src={content.profilePhotoUrl || '/src/assets/images/hero_portrait_1792149624424.jpg'}
+                  src={content.profilePhotoUrl || '/images/hero_portrait_1792149624424.jpg'}
                   alt={content.name}
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover object-center filter grayscale-[15%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"

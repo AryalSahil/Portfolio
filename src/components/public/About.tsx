@@ -64,7 +64,7 @@ export const About: React.FC<AboutProps> = ({ content, skills, allowResumeDownlo
             <div className="relative rounded-2xl overflow-hidden border border-slate-800/80 bg-slate-900/40 p-2 shadow-xl group">
               <div className="w-full aspect-[4/3] rounded-xl overflow-hidden relative">
                 <img
-                  src={content.profilePhotoUrl || '/src/assets/images/about_workspace_1792149624407.jpg'}
+                  src={content.profilePhotoUrl || '/images/about_workspace_1792149624407.jpg'}
                   alt="Creative Workspace"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"

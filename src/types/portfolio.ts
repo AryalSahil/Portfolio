@@ -1,3 +1,5 @@
+export type PublishStatus = 'draft' | 'published' | 'unpublished';
+
 export interface SocialLink {
   id: string;
   platform: 'GitHub' | 'LinkedIn' | 'Instagram' | 'Facebook' | 'YouTube' | 'X' | 'Custom';
@@ -42,6 +44,56 @@ export interface EducationItem {
   period: string;
   description: string;
   order: number;
+  isPublished: boolean;
+}
+
+export interface ExperienceItem {
+  id: string;
+  company: string;
+  role: string;
+  location: string;
+  period: string;
+  description: string;
+  achievements: string[];
+  isCurrent: boolean;
+  isPublished: boolean;
+  order: number;
+}
+
+export interface CertificationItem {
+  id: string;
+  title: string;
+  issuer: string;
+  issueDate: string;
+  expiryDate?: string;
+  credentialId?: string;
+  credentialUrl?: string;
+  badgeImage?: string;
+  isPublished: boolean;
+  order: number;
+}
+
+export interface AchievementItem {
+  id: string;
+  title: string;
+  organization: string;
+  date: string;
+  description: string;
+  badgeIcon?: string;
+  url?: string;
+  isPublished: boolean;
+  order: number;
+}
+
+export interface ServiceItem {
+  id: string;
+  title: string;
+  description: string;
+  icon?: string;
+  deliverables: string[];
+  pricing?: string;
+  isPublished: boolean;
+  order: number;
 }
 
 export interface CareerGoalItem {
@@ -49,6 +101,50 @@ export interface CareerGoalItem {
   goal: string;
   timeframe: string;
   isCompleted: boolean;
+}
+
+export interface TestimonialItem {
+  id: string;
+  clientName: string;
+  clientRole: string;
+  clientCompany: string;
+  avatarUrl?: string;
+  content: string;
+  rating: number; // 1-5
+  isPublished: boolean;
+  order: number;
+}
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  coverImage?: string;
+  tags: string[];
+  publishedAt: string;
+  readTimeMinutes: number;
+  isPublished: boolean;
+  order: number;
+}
+
+export interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
+  category: string;
+  isPublished: boolean;
+  order: number;
+}
+
+export interface CustomPage {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  isPublished: boolean;
+  updatedAt: string;
 }
 
 export interface ContactMessage {
@@ -62,6 +158,13 @@ export interface ContactMessage {
   ipAddress?: string;
 }
 
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  subscribedAt: string;
+  status: 'active' | 'unsubscribed';
+}
+
 export interface MediaAsset {
   id: string;
   name: string;
@@ -70,6 +173,7 @@ export interface MediaAsset {
   mimeType: string;
   size: number;
   uploadedAt: string;
+  dataBase64?: string; // Permanent in-database backup for serverless/cold-start environments
 }
 
 export interface ActivityLog {
@@ -95,6 +199,7 @@ export interface WebsiteSettings {
   accentColor: string;
   themeMode: 'dark' | 'light' | 'system';
   maintenanceMode: boolean;
+  maintenanceMessage?: string;
   previewToken: string;
   resumeUrl: string;
   allowResumeDownload: boolean;
@@ -138,6 +243,49 @@ export interface AboutContent {
   isPublished: boolean;
 }
 
+export interface ResumeManagement {
+  url: string;
+  fileName: string;
+  lastUpdated: string;
+  allowDownload: boolean;
+  totalDownloads: number;
+  downloadLogs: Array<{ id: string; timestamp: string; ip?: string }>;
+}
+
+export interface SeoMetadata {
+  metaTitle: string;
+  metaDescription: string;
+  keywords: string[];
+  author: string;
+  ogImage?: string;
+  canonicalUrl?: string;
+  twitterHandle?: string;
+}
+
+export interface NotificationSettings {
+  emailAlerts: boolean;
+  notifyOnNewMessage: boolean;
+  notifyOnResumeDownload: boolean;
+  notificationEmail: string;
+}
+
+export interface AnalyticsRecord {
+  pageViews: number;
+  uniqueVisitors: number;
+  sectionViews: Record<string, number>;
+  dailyVisits: Array<{ date: string; views: number }>;
+}
+
+export interface GithubActivity {
+  username: string;
+  totalRepos: number;
+  publicGists: number;
+  followers: number;
+  contributionsThisYear: number;
+  topLanguages: Array<{ name: string; percentage: number }>;
+  recentRepos: Array<{ name: string; stars: number; forks: number; description: string; url: string; language: string }>;
+}
+
 export interface AdminProfile {
   name: string;
   email: string;
@@ -162,11 +310,26 @@ export interface PortfolioData {
   about: AboutContent;
   skills: SkillItem[];
   projects: ProjectItem[];
+  education: EducationItem[];
+  experience: ExperienceItem[];
+  certifications: CertificationItem[];
+  achievements: AchievementItem[];
+  services: ServiceItem[];
+  resume: ResumeManagement;
+  blog: BlogPost[];
+  testimonials: TestimonialItem[];
+  faq: FaqItem[];
+  customPages: CustomPage[];
   socialLinks: SocialLink[];
   contactMessages: ContactMessage[];
+  newsletterSubscribers: NewsletterSubscriber[];
   mediaLibrary: MediaAsset[];
+  seoMetadata: SeoMetadata;
+  notificationSettings: NotificationSettings;
+  analytics: AnalyticsRecord;
+  githubActivity: GithubActivity;
   adminProfile: AdminProfile;
-  adminPasswordHash: string; // or password
+  adminPasswordHash: string;
   activityLogs: ActivityLog[];
   modularSections: ModularSection[];
 }
@@ -178,6 +341,18 @@ export interface PublicPortfolioData {
   about: AboutContent;
   skills: SkillItem[];
   projects: ProjectItem[];
+  education: EducationItem[];
+  experience: ExperienceItem[];
+  certifications: CertificationItem[];
+  achievements: AchievementItem[];
+  services: ServiceItem[];
+  resume: ResumeManagement;
+  blog: BlogPost[];
+  testimonials: TestimonialItem[];
+  faq: FaqItem[];
   socialLinks: SocialLink[];
+  customPages: CustomPage[];
+  githubActivity: GithubActivity;
+  seoMetadata: SeoMetadata;
   modularSections: ModularSection[];
 }
