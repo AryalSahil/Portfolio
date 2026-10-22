@@ -22,8 +22,14 @@ import type {
   PublicPortfolioData
 } from './src/types/portfolio.ts';
 
+function getCliArg(flag: string): string | undefined {
+  const idx = process.argv.indexOf(flag);
+  return idx !== -1 && idx + 1 < process.argv.length ? process.argv[idx + 1] : undefined;
+}
+
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT || getCliArg('--port') || 3000);
+const HOST = process.env.HOST || getCliArg('--host') || '0.0.0.0';
 const isProduction = process.env.NODE_ENV === 'production';
 const IS_SERVERLESS = process.env.VERCEL === '1' || process.env.NOW_REGION !== undefined;
 
@@ -1109,7 +1115,7 @@ async function setupServer() {
   if (!isProduction) {
     const { createServer } = await import('vite');
     const vite = await createServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: false },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -1121,8 +1127,8 @@ async function setupServer() {
     });
   }
 
-  app.listen(PORT, () => {
-    console.log(`Server running in ${isProduction ? 'production' : 'development'} on port ${PORT}`);
+  app.listen(PORT, HOST, () => {
+    console.log(`Server running in ${isProduction ? 'production' : 'development'} at http://${HOST}:${PORT}`);
   });
 }
 
