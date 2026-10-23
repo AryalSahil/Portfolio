@@ -8,7 +8,7 @@ interface ServicesSectionProps {
 
 export const ServicesSection: React.FC<ServicesSectionProps> = ({ services }) => {
   const publishedItems = (services || [])
-    .filter((s) => s.isPublished)
+    .filter((s) => s.isPublished !== false)
     .sort((a, b) => a.order - b.order);
 
   if (publishedItems.length === 0) return null;
@@ -24,13 +24,13 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ services }) =>
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-indigo-400 text-xs font-mono uppercase tracking-widest font-semibold">
             <Zap className="w-4 h-4" />
-            <span>Consulting & Advisory</span>
+            <span>Consulting & Offerings</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Specialized Engineering Services
+            Specialized Services & Capabilities
           </h2>
           <p className="text-slate-400 text-sm sm:text-base max-w-2xl leading-relaxed">
-            Targeted architectural consulting, enterprise design system delivery, and fractional staff leadership for ambitious engineering teams.
+            Technical consulting, software architecture advisory, and engineering delivery capabilities available for engagements.
           </p>
         </div>
 
@@ -62,15 +62,15 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ services }) =>
                 </div>
 
                 {srv.deliverables && srv.deliverables.length > 0 && (
-                  <div className="space-y-2.5 pt-2 border-t border-slate-800/80">
-                    <div className="text-[11px] font-mono uppercase text-slate-500 tracking-wider">
-                      Included Deliverables:
+                  <div className="space-y-2.5 pt-4 border-t border-slate-800/80">
+                    <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">
+                      Key Deliverables
                     </div>
                     <ul className="space-y-2">
-                      {srv.deliverables.map((del, i) => (
-                        <li key={i} className="flex items-start gap-2 text-xs sm:text-sm text-slate-300">
+                      {srv.deliverables.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2.5 text-xs text-slate-300">
                           <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                          <span>{del}</span>
+                          <span>{item}</span>
                         </li>
                       ))}
                     </ul>
@@ -80,10 +80,10 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ services }) =>
 
               <button
                 onClick={scrollToContact}
-                className="w-full py-3 px-4 rounded-xl text-xs font-semibold text-slate-950 bg-white hover:bg-slate-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+                className="w-full py-3 rounded-xl text-xs font-semibold text-slate-200 bg-slate-900 hover:bg-slate-800 border border-slate-700 transition-all flex items-center justify-center gap-2 group-hover:border-indigo-500/50 cursor-pointer"
               >
-                <span>Inquire About Availability</span>
-                <ArrowUpRight className="w-4 h-4" />
+                <span>Inquire About Service</span>
+                <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-white" />
               </button>
             </div>
           ))}

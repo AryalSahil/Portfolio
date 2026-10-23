@@ -270,6 +270,19 @@ export default function App() {
   }
 
 
+  const availableSections = ['home', 'about', 'work', 'contact'];
+  if (portfolioData.experience && portfolioData.experience.length > 0) availableSections.push('experience');
+  if (portfolioData.skills && portfolioData.skills.length > 0) availableSections.push('skills');
+  if (portfolioData.services && portfolioData.services.length > 0) availableSections.push('services');
+  if (portfolioData.education && portfolioData.education.length > 0) availableSections.push('education');
+  if (portfolioData.certifications && portfolioData.certifications.length > 0) availableSections.push('certifications');
+  if (portfolioData.achievements && portfolioData.achievements.length > 0) availableSections.push('achievements');
+  if (portfolioData.resume && portfolioData.resume.url && portfolioData.resume.allowDownload) availableSections.push('resume');
+  if (portfolioData.testimonials && portfolioData.testimonials.length > 0) availableSections.push('testimonials');
+  if (portfolioData.blog && portfolioData.blog.length > 0) availableSections.push('blog');
+  if (portfolioData.githubActivity && portfolioData.githubActivity.username) availableSections.push('github');
+  if (portfolioData.faq && portfolioData.faq.length > 0) availableSections.push('faq');
+
   // Render Public Website (Home, About, Work, Contact + Dynamic Future Sections + Footer)
   return (
     <div className="min-h-screen bg-[#0b0c10] text-slate-100 font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
@@ -278,6 +291,7 @@ export default function App() {
         config={portfolioData.headerFooter}
         onNavigateToAdmin={() => navigateToAdmin()}
         activeSection={activeSection}
+        availableSections={availableSections}
       />
 
       <main>

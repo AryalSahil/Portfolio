@@ -26,8 +26,8 @@ export const ManageTestimonialsView: React.FC<ManageTestimonialsViewProps> = ({ 
     setIsNew(true);
     setEditingItem({
       clientName: '',
-      clientRole: 'VP of Engineering',
-      clientCompany: 'Tech Corp',
+      clientRole: '',
+      clientCompany: '',
       content: '',
       rating: 5,
       avatarUrl: '',

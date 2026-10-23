@@ -156,7 +156,12 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ media, onRef
           <span>Total Assets: {media.length}</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {media.length === 0 ? (
+          <div className="p-12 text-center border border-dashed border-slate-800 rounded-2xl bg-slate-900/20 text-slate-500 text-xs font-mono">
+            No media assets uploaded yet. Upload images above to store them permanently in the database.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {media.map((asset) => {
             const isImage = asset.mimeType?.startsWith('image/') || asset.url.match(/\.(jpg|jpeg|png|webp|svg)$/i);
             const isCopied = copiedId === asset.id;
@@ -244,6 +249,7 @@ export const MediaLibraryView: React.FC<MediaLibraryViewProps> = ({ media, onRef
             );
           })}
         </div>
+        )}
       </div>
     </div>
   );

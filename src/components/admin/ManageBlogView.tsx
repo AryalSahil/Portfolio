@@ -26,14 +26,14 @@ export const ManageBlogView: React.FC<ManageBlogViewProps> = ({ posts, onRefresh
 
   const handleOpenNew = () => {
     setIsNew(true);
-    setTagsInput('Architecture, TypeScript');
+    setTagsInput('');
     setEditingItem({
       title: '',
       slug: '',
       excerpt: '',
       content: '',
-      coverImage: '/images/project_cloud_arch_1792149624510.jpg',
-      tags: ['Architecture', 'TypeScript'],
+      coverImage: '',
+      tags: [],
       publishedAt: new Date().toISOString(),
       readTimeMinutes: 5,
       isPublished: true,

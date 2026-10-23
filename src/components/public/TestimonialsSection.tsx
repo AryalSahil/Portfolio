@@ -8,7 +8,7 @@ interface TestimonialsSectionProps {
 
 export const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ testimonials }) => {
   const publishedItems = (testimonials || [])
-    .filter((t) => t.isPublished)
+    .filter((t) => t.isPublished !== false)
     .sort((a, b) => a.order - b.order);
 
   if (publishedItems.length === 0) return null;
@@ -19,13 +19,13 @@ export const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ testim
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-indigo-400 text-xs font-mono uppercase tracking-widest font-semibold">
             <MessageSquare className="w-4 h-4" />
-            <span>Executive Endorsements</span>
+            <span>Endorsements</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
             Client & Peer Testimonials
           </h2>
           <p className="text-slate-400 text-sm sm:text-base max-w-2xl leading-relaxed">
-            Recommendations from vice presidents of engineering, research directors, and principal design leaders.
+            Recommendations and reviews from project partners, collaborators, and clients.
           </p>
         </div>
 
@@ -51,16 +51,26 @@ export const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ testim
               </div>
 
               <div className="flex items-center gap-3 pt-4 border-t border-slate-800/80">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-sky-400 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                  {item.clientName.split(' ').map((n) => n[0]).join('')}
-                </div>
+                {item.avatarUrl ? (
+                  <img
+                    src={item.avatarUrl}
+                    alt={item.clientName}
+                    className="w-10 h-10 rounded-full object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-sky-400 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                    {item.clientName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                )}
                 <div className="overflow-hidden">
                   <div className="text-sm font-bold text-white tracking-tight truncate">
                     {item.clientName}
                   </div>
-                  <div className="text-xs text-indigo-400 truncate">
-                    {item.clientRole} · {item.clientCompany}
-                  </div>
+                  {(item.clientRole || item.clientCompany) && (
+                    <div className="text-xs text-slate-400 truncate">
+                      {item.clientRole}{item.clientRole && item.clientCompany ? ', ' : ''}{item.clientCompany}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

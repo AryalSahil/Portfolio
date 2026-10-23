@@ -6,9 +6,10 @@ interface NavbarProps {
   config: HeaderFooterConfig;
   onNavigateToAdmin: () => void;
   activeSection: string;
+  availableSections?: string[];
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ config, onNavigateToAdmin, activeSection }) => {
+export const Navbar: React.FC<NavbarProps> = ({ config, onNavigateToAdmin, activeSection, availableSections }) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -21,7 +22,12 @@ export const Navbar: React.FC<NavbarProps> = ({ config, onNavigateToAdmin, activ
   }, []);
 
   const visibleNavItems = (config.navItems || [])
-    .filter((item) => item.isVisible)
+    .filter((item) => {
+      if (!item.isVisible) return false;
+      if (!availableSections) return true;
+      const targetSlug = item.href.replace('#', '');
+      return availableSections.includes(targetSlug);
+    })
     .sort((a, b) => a.order - b.order);
 
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -45,21 +51,21 @@ export const Navbar: React.FC<NavbarProps> = ({ config, onNavigateToAdmin, activ
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-8 flex items-center justify-between gap-8">
-        {/* Zone 1: Single text element wordmark */}
+        {/* Wordmark */}
         <a
           href="#home"
           onClick={(e) => scrollToSection(e, '#home')}
           className="text-lg font-bold tracking-tight text-white hover:text-indigo-400 transition-colors whitespace-nowrap shrink-0 flex items-center gap-2"
         >
           {config.logoUrl ? (
-            <img src={config.logoUrl} alt={config.brandName} className="w-7 h-7 rounded object-cover" />
+            <img src={config.logoUrl} alt={config.brandName || 'Portfolio'} className="w-7 h-7 rounded object-cover" />
           ) : (
             <span className="w-2.5 h-2.5 bg-indigo-500 rounded-sm"></span>
           )}
           <span>{config.brandName || 'Portfolio'}</span>
         </a>
 
-        {/* Zone 2: 4 clean single-line text navigation links */}
+        {/* Navigation links */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
           {visibleNavItems.map((item) => {
             const isActive = activeSection === item.href.replace('#', '');
@@ -81,7 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({ config, onNavigateToAdmin, activ
           })}
         </nav>
 
-        {/* Zone 3: 1 primary action */}
+        {/* Primary CTA */}
         <div className="hidden md:flex items-center gap-3 shrink-0">
           <a
             href="#contact"
@@ -94,7 +100,7 @@ export const Navbar: React.FC<NavbarProps> = ({ config, onNavigateToAdmin, activ
           <button
             onClick={onNavigateToAdmin}
             title="Administrator Portal"
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800/80 rounded-lg transition-colors"
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800/80 rounded-lg transition-colors cursor-pointer"
             aria-label="Admin Portal"
           >
             <Lock className="w-4 h-4" />
@@ -105,7 +111,7 @@ export const Navbar: React.FC<NavbarProps> = ({ config, onNavigateToAdmin, activ
         <div className="flex md:hidden items-center gap-2">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-slate-300 hover:text-white rounded-lg focus:outline-none"
+            className="p-2 text-slate-300 hover:text-white rounded-lg focus:outline-none cursor-pointer"
             aria-label="Toggle Navigation"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -142,7 +148,7 @@ export const Navbar: React.FC<NavbarProps> = ({ config, onNavigateToAdmin, activ
                 setMobileMenuOpen(false);
                 onNavigateToAdmin();
               }}
-              className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 py-2 px-3 rounded bg-slate-800/50"
+              className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 py-2 px-3 rounded bg-slate-800/50 cursor-pointer"
             >
               <Lock className="w-3.5 h-3.5" />
               <span>Admin Portal</span>

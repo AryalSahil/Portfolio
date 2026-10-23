@@ -1,6 +1,6 @@
 import React from 'react';
 import { HomeContent, SocialLink } from '../../types/portfolio.js';
-import { ArrowDown, ArrowUpRight, Github, Linkedin, Twitter, Youtube, Globe, Mail } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, Github, Linkedin, Twitter, Youtube, Globe, User, Sparkles } from 'lucide-react';
 
 interface HeroProps {
   content: HomeContent;
@@ -33,6 +33,45 @@ export const Hero: React.FC<HeroProps> = ({ content, socialLinks }) => {
     }
   };
 
+  const isConfigured = Boolean(content && content.name && content.name.trim().length > 0);
+
+  // If hero is not yet configured, render a clean, professional empty state
+  if (!isConfigured) {
+    return (
+      <section id="home" className="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+
+        <div className="max-w-7xl mx-auto px-6 sm:px-8">
+          <div className="max-w-3xl mx-auto text-center space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono uppercase tracking-widest text-indigo-400 bg-indigo-500/10 border border-indigo-500/20">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Personal Portfolio</span>
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.1] text-balance">
+              Welcome to My Portfolio
+            </h1>
+
+            <p className="text-slate-400 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+              Selected works, engineering experience, and technical projects will be showcased here. In the meantime, you are welcome to reach out directly using the inquiry form below.
+            </p>
+
+            <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
+              <button
+                onClick={() => scrollTo('#contact')}
+                className="px-6 py-3 text-sm font-semibold text-slate-950 bg-white hover:bg-slate-100 rounded-lg transition-all duration-200 shadow-md flex items-center gap-2 cursor-pointer"
+              >
+                <span>Get In Touch</span>
+                <ArrowDown className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Configured Hero State
   return (
     <section id="home" className="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden">
       {/* Subtle ambient background glow */}
@@ -43,20 +82,17 @@ export const Hero: React.FC<HeroProps> = ({ content, socialLinks }) => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           {/* Left Column: Typographic Hierarchy */}
           <div className="lg:col-span-7 space-y-6">
-            {/* Kicker */}
-            <div className="text-xs uppercase tracking-widest text-indigo-400 font-semibold font-mono">
-              Available for Selected High-Impact Projects
-            </div>
-
             {/* Display Headline */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.1] text-balance">
               Hello, I'm <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-indigo-300">{content.name}</span>
             </h1>
 
             {/* Subtitle / Role */}
-            <p className="text-xl sm:text-2xl font-medium text-slate-300">
-              {content.title}
-            </p>
+            {content.title && (
+              <p className="text-xl sm:text-2xl font-medium text-slate-300">
+                {content.title}
+              </p>
+            )}
 
             {/* Subtitle note */}
             {content.subtitle && (
@@ -66,9 +102,11 @@ export const Hero: React.FC<HeroProps> = ({ content, socialLinks }) => {
             )}
 
             {/* Intro Lead */}
-            <p className="text-slate-400 text-base sm:text-lg leading-relaxed max-w-2xl">
-              {content.intro}
-            </p>
+            {content.intro && (
+              <p className="text-slate-400 text-base sm:text-lg leading-relaxed max-w-2xl">
+                {content.intro}
+              </p>
+            )}
 
             {/* Action Buttons */}
             <div className="pt-2 flex flex-wrap items-center gap-4">
@@ -115,18 +153,30 @@ export const Hero: React.FC<HeroProps> = ({ content, socialLinks }) => {
           {/* Right Column: Hero Visual Container */}
           <div className="lg:col-span-5 flex justify-center lg:justify-end">
             <div className="relative w-full max-w-[380px] aspect-square rounded-2xl overflow-hidden border border-slate-800/90 bg-gradient-to-b from-slate-800/30 to-slate-950/80 shadow-2xl p-2 group">
-              <div className="w-full h-full rounded-xl overflow-hidden relative">
-                <img
-                  src={content.profilePhotoUrl || '/images/hero_portrait_1792149624424.jpg'}
-                  alt={content.name}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover object-center filter grayscale-[15%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
-                <div className="absolute bottom-4 left-4 right-4">
-                  <div className="text-sm font-semibold text-white tracking-tight">{content.name}</div>
-                  <div className="text-xs text-slate-400 truncate">{content.title}</div>
-                </div>
+              <div className="w-full h-full rounded-xl overflow-hidden relative flex items-center justify-center bg-slate-900/50">
+                {content.profilePhotoUrl ? (
+                  <>
+                    <img
+                      src={content.profilePhotoUrl}
+                      alt={content.name}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-all duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="text-sm font-semibold text-white tracking-tight">{content.name}</div>
+                      {content.title && <div className="text-xs text-slate-400 truncate">{content.title}</div>}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-center p-6 space-y-3">
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-500/20 to-sky-400/20 border border-indigo-500/30 flex items-center justify-center text-2xl font-bold text-indigo-300">
+                      {content.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || <User className="w-8 h-8 text-indigo-400" />}
+                    </div>
+                    <div className="text-sm font-semibold text-white">{content.name}</div>
+                    {content.title && <div className="text-xs text-slate-400">{content.title}</div>}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -144,9 +194,11 @@ export const Hero: React.FC<HeroProps> = ({ content, socialLinks }) => {
                   <div className="text-sm font-medium text-slate-200">
                     {stat.label}
                   </div>
-                  <div className="text-xs text-slate-500">
-                    {stat.subtext}
-                  </div>
+                  {stat.subtext && (
+                    <div className="text-xs text-slate-500">
+                      {stat.subtext}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

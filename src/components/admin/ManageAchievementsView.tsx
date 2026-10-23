@@ -26,7 +26,7 @@ export const ManageAchievementsView: React.FC<ManageAchievementsViewProps> = ({ 
     setEditingItem({
       title: '',
       organization: '',
-      date: '2025-10',
+      date: '',
       description: '',
       badgeIcon: 'Trophy',
       url: '',

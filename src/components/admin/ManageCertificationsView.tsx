@@ -30,7 +30,7 @@ export const ManageCertificationsView: React.FC<ManageCertificationsViewProps> =
     setEditingItem({
       title: '',
       issuer: '',
-      issueDate: '2024-05',
+      issueDate: '',
       expiryDate: '',
       credentialId: '',
       credentialUrl: '',

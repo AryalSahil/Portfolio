@@ -47,7 +47,7 @@ export const ManageSocialView: React.FC<ManageSocialViewProps> = ({ socialLinks,
     setEditingLink({
       platform: 'GitHub',
       label: 'GitHub',
-      url: 'https://github.com/',
+      url: '',
       isEnabled: true,
     });
   };

@@ -12,12 +12,12 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ faq }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   const publishedItems = (faq || [])
-    .filter((f) => f.isPublished)
+    .filter((f) => f.isPublished !== false)
     .sort((a, b) => a.order - b.order);
 
   if (publishedItems.length === 0) return null;
 
-  const categories = ['All', ...Array.from(new Set(publishedItems.map((f) => f.category)))];
+  const categories = ['All', ...Array.from(new Set(publishedItems.map((f) => f.category).filter(Boolean)))];
 
   const filtered = publishedItems.filter((item) => {
     if (selectedCategory !== 'All' && item.category !== selectedCategory) return false;
@@ -46,7 +46,7 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ faq }) => {
             Frequently Asked Questions
           </h2>
           <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-            Clarifications on advisory availability, systems architecture philosophy, technology stack choices, and keynote engagements.
+            Helpful answers to common questions about availability, collaborations, and projects.
           </p>
         </div>
 
@@ -59,32 +59,34 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ faq }) => {
               placeholder="Search frequently asked questions..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-xs bg-[#0e1017] border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+              className="w-full pl-10 pr-4 py-2 text-xs bg-slate-900 border border-slate-800 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
             />
           </div>
 
-          <div className="flex flex-wrap gap-1.5">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors cursor-pointer ${
-                  selectedCategory === cat
-                    ? 'bg-white text-slate-950 font-bold'
-                    : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+          {categories.length > 2 && (
+            <div className="flex flex-wrap gap-1 p-1 bg-slate-900 border border-slate-800 rounded-lg self-start sm:self-auto">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                    selectedCategory === cat
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* FAQ Accordion List */}
+        {/* Accordion List */}
         <div className="space-y-3">
           {filtered.length === 0 ? (
-            <div className="p-8 rounded-2xl border border-dashed border-slate-800 text-center text-xs text-slate-500 font-mono">
-              No matching questions found. Feel free to send a message via the Contact section below.
+            <div className="p-8 text-center border border-dashed border-slate-800 rounded-2xl text-slate-500 text-xs">
+              No matching questions found.
             </div>
           ) : (
             filtered.map((item) => {
@@ -92,22 +94,24 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ faq }) => {
               return (
                 <div
                   key={item.id}
-                  className="rounded-xl border border-slate-800 bg-[#0e1017] overflow-hidden transition-all"
+                  className="rounded-2xl border border-slate-800 bg-[#0e1017] overflow-hidden transition-all"
                 >
                   <button
                     onClick={() => toggleOpen(item.id)}
-                    className="w-full p-5 text-left flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-900/50 transition-colors"
+                    className="w-full p-5 text-left flex items-center justify-between gap-4 hover:bg-slate-900/40 transition-colors"
                   >
-                    <span className="font-bold text-white text-sm sm:text-base tracking-tight">
+                    <span className="font-semibold text-white text-sm sm:text-base">
                       {item.question}
                     </span>
-                    <span className="p-1 rounded-md text-slate-400 hover:text-white shrink-0">
-                      {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </span>
+                    {isOpen ? (
+                      <ChevronUp className="w-4 h-4 text-indigo-400 shrink-0" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" />
+                    )}
                   </button>
 
                   {isOpen && (
-                    <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/60 font-sans">
+                    <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-slate-400 leading-relaxed border-t border-slate-800/60">
                       {item.answer}
                     </div>
                   )}

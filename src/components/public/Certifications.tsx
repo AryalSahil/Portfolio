@@ -8,7 +8,7 @@ interface CertificationsProps {
 
 export const Certifications: React.FC<CertificationsProps> = ({ certifications }) => {
   const publishedItems = (certifications || [])
-    .filter((c) => c.isPublished)
+    .filter((c) => c.isPublished !== false)
     .sort((a, b) => a.order - b.order);
 
   if (publishedItems.length === 0) return null;
@@ -25,7 +25,7 @@ export const Certifications: React.FC<CertificationsProps> = ({ certifications }
             Professional Certifications
           </h2>
           <p className="text-slate-400 text-sm sm:text-base max-w-2xl leading-relaxed">
-            Verified industry credentials in cloud architecture, container orchestration, and distributed engineering.
+            Verified credentials, industry licenses, and technical accreditations.
           </p>
         </div>
 
@@ -56,12 +56,14 @@ export const Certifications: React.FC<CertificationsProps> = ({ certifications }
                 </div>
 
                 <div className="space-y-1 text-xs text-slate-400 font-mono pt-1">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Issued: {cert.issueDate}</span>
-                  </div>
+                  {cert.issueDate && (
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Issued: {cert.issueDate}</span>
+                    </div>
+                  )}
                   {cert.credentialId && (
-                    <div className="text-[11px] text-slate-500 truncate" title={cert.credentialId}>
+                    <div className="text-slate-500 text-[11px] truncate">
                       ID: {cert.credentialId}
                     </div>
                   )}
@@ -69,17 +71,15 @@ export const Certifications: React.FC<CertificationsProps> = ({ certifications }
               </div>
 
               {cert.credentialUrl && (
-                <div className="pt-3 border-t border-slate-800/80">
-                  <a
-                    href={cert.credentialUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-white transition-colors font-mono"
-                  >
-                    <span>Verify Credential</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                </div>
+                <a
+                  href={cert.credentialUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-medium pt-3 border-t border-slate-800/80"
+                >
+                  <span>Verify Credential</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
               )}
             </div>
           ))}

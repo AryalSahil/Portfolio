@@ -8,10 +8,11 @@ interface ResumeSectionProps {
 
 export const ResumeSection: React.FC<ResumeSectionProps> = ({ resume }) => {
   const [downloading, setDownloading] = useState(false);
-  const [downloadCount, setDownloadCount] = useState<number>(resume?.totalDownloads || 142);
+  const [downloadCount, setDownloadCount] = useState<number>(resume?.totalDownloads || 0);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
-  if (!resume || resume.allowDownload === false) return null;
+  // Display only when enabled and populated with a real URL
+  if (!resume || resume.allowDownload === false || !resume.url) return null;
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -21,7 +22,7 @@ export const ResumeSection: React.FC<ResumeSectionProps> = ({ resume }) => {
       const res = await fetch('/api/resume/download', { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
-        if (data.totalDownloads) {
+        if (typeof data.totalDownloads === 'number') {
           setDownloadCount(data.totalDownloads);
         }
       }
@@ -31,8 +32,8 @@ export const ResumeSection: React.FC<ResumeSectionProps> = ({ resume }) => {
 
     // Trigger download
     const link = document.createElement('a');
-    link.href = resume.url || '/uploads/elena_vance_cv_2026.pdf';
-    link.download = resume.fileName || 'Elena_Vance_Curriculum_Vitae_2026.pdf';
+    link.href = resume.url;
+    link.download = resume.fileName || 'Curriculum_Vitae.pdf';
     link.target = '_blank';
     document.body.appendChild(link);
     link.click();
@@ -54,26 +55,28 @@ export const ResumeSection: React.FC<ResumeSectionProps> = ({ resume }) => {
             <div className="lg:col-span-8 space-y-4">
               <div className="flex items-center gap-2 text-indigo-400 text-xs font-mono uppercase tracking-widest font-semibold">
                 <FileText className="w-4 h-4" />
-                <span>Verified Curriculum Vitae</span>
+                <span>Curriculum Vitae</span>
               </div>
 
               <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                Download Comprehensive Resume & CV
+                Download Resume & CV
               </h2>
 
               <p className="text-slate-400 text-sm sm:text-base leading-relaxed max-w-2xl">
-                Detailed 4-page technical dossier covering architectural patents, distributed systems scale metrics, full employment timeline, and engineering leadership contributions.
+                Official curriculum vitae covering technical experience, project achievements, and professional qualifications.
               </p>
 
               <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-slate-400 pt-2">
                 <span className="flex items-center gap-1.5 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>PDF Format (Print & ATS-Optimized)</span>
+                  <span>PDF Document</span>
                 </span>
-                <span className="flex items-center gap-1.5 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
-                  <Eye className="w-4 h-4 text-indigo-400" />
-                  <span>{downloadCount} Verified Downloads</span>
-                </span>
+                {downloadCount > 0 && (
+                  <span className="flex items-center gap-1.5 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
+                    <Eye className="w-4 h-4 text-indigo-400" />
+                    <span>{downloadCount} Downloads</span>
+                  </span>
+                )}
               </div>
             </div>
 
@@ -101,9 +104,11 @@ export const ResumeSection: React.FC<ResumeSectionProps> = ({ resume }) => {
                 )}
               </button>
 
-              <div className="text-center lg:text-right text-[11px] text-slate-500 font-mono">
-                Last updated: {new Date(resume.lastUpdated || Date.now()).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
-              </div>
+              {resume.lastUpdated && (
+                <div className="text-center lg:text-right text-[11px] text-slate-500 font-mono">
+                  Last updated: {new Date(resume.lastUpdated).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                </div>
+              )}
             </div>
           </div>
         </div>

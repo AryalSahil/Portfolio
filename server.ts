@@ -654,7 +654,7 @@ app.post('/api/admin/projects', requireAuth, (req: Request, res: Response) => {
     subtitle: project.subtitle?.trim() || '',
     description: project.description.trim(),
     longDescription: project.longDescription?.trim() || '',
-    thumbnail: project.thumbnail?.trim() || '/images/project_cloud_arch_1792149624510.jpg',
+    thumbnail: project.thumbnail?.trim() || '',
     galleryImages: project.galleryImages || [],
     tags: project.tags && Array.isArray(project.tags) ? project.tags : ['TypeScript'],
     liveUrl: project.liveUrl?.trim() || '',

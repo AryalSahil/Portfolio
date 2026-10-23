@@ -20,6 +20,9 @@ export const Contact: React.FC<ContactProps> = ({ contactEmail, socialLinks }) =
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
 
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState<{ success: boolean; message: string } | null>(null);
+
   const getSocialIcon = (platform: string) => {
     switch (platform.toLowerCase()) {
       case 'github': return <Github className="w-4 h-4" />;
@@ -39,7 +42,6 @@ export const Contact: React.FC<ContactProps> = ({ contactEmail, socialLinks }) =
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Client side validation
     if (!formData.name.trim() || formData.name.trim().length < 2) {
       setStatus('error');
       setErrorMessage('Please enter your full name (at least 2 characters).');
@@ -92,19 +94,43 @@ export const Contact: React.FC<ContactProps> = ({ contactEmail, socialLinks }) =
     }
   };
 
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail) return;
+
+    try {
+      const res = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newsletterEmail }),
+      });
+      const r = await res.json();
+      if (res.ok) {
+        setNewsletterStatus({ success: true, message: r.message || 'Subscribed successfully!' });
+        setNewsletterEmail('');
+      } else {
+        setNewsletterStatus({ success: false, message: r.error || 'Could not subscribe.' });
+      }
+    } catch {
+      setNewsletterStatus({ success: false, message: 'Could not connect. Please try again.' });
+    }
+  };
+
+  const enabledSocialLinks = (socialLinks || []).filter((s) => s.isEnabled !== false);
+
   return (
     <section id="contact" className="py-20 md:py-28 border-t border-slate-800/60 relative">
       <div className="max-w-7xl mx-auto px-6 sm:px-8 space-y-16">
         {/* Section Header */}
         <div className="space-y-3">
           <div className="text-xs uppercase tracking-widest text-indigo-400 font-semibold font-mono">
-            03. Direct Inquiries & Collaboration
+            Direct Inquiries
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-            Initiate a Dialogue
+            Get In Touch
           </h2>
           <p className="text-sm sm:text-base text-slate-400 max-w-xl">
-            Have a distributed system challenge, technical advisory inquiry, or ambitious product in mind? Send a direct message below.
+            Have a project in mind, an opportunity to discuss, or an engineering inquiry? Send a direct message below.
           </p>
         </div>
 
@@ -113,55 +139,34 @@ export const Contact: React.FC<ContactProps> = ({ contactEmail, socialLinks }) =
           {/* Left Column: Direct Contacts & Social Links */}
           <div className="lg:col-span-5 space-y-8">
             <div className="p-6 rounded-2xl border border-slate-800/80 bg-slate-900/40 space-y-6">
-              <div className="space-y-2">
-                <div className="text-xs font-mono uppercase tracking-wider text-slate-500">Direct Email</div>
-                <a
-                  href={`mailto:${contactEmail || 'contact@studio-aetheria.dev'}`}
-                  className="text-base sm:text-lg font-semibold text-white hover:text-indigo-400 transition-colors flex items-center gap-2 group"
-                >
-                  <Mail className="w-5 h-5 text-indigo-400 shrink-0" />
-                  <span className="truncate">{contactEmail || 'contact@studio-aetheria.dev'}</span>
-                  <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-transform" />
-                </a>
-              </div>
-
-              <div className="pt-4 border-t border-slate-800/60 space-y-2">
-                <div className="text-xs font-mono uppercase tracking-wider text-slate-500">Location & Timezone</div>
-                <div className="text-sm text-slate-300">San Francisco, CA (PST · UTC-8)</div>
-                <p className="text-xs text-slate-500">Available for hybrid engagements and global remote advisories.</p>
-              </div>
+              {contactEmail && contactEmail.trim().length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-xs font-mono uppercase tracking-wider text-slate-500">Direct Email</div>
+                  <a
+                    href={`mailto:${contactEmail}`}
+                    className="text-base sm:text-lg font-semibold text-white hover:text-indigo-400 transition-colors flex items-center gap-2 group"
+                  >
+                    <Mail className="w-5 h-5 text-indigo-400 shrink-0" />
+                    <span className="truncate">{contactEmail}</span>
+                    <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-transform" />
+                  </a>
+                </div>
+              )}
 
               {/* Newsletter Subscription */}
-              <div className="pt-4 border-t border-slate-800/60 space-y-3">
-                <div className="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold">Engineering Monograph Dispatch</div>
+              <div className="pt-2 space-y-3">
+                <div className="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold">
+                  Newsletter & Updates
+                </div>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Join 1,200+ engineers receiving bi-monthly essays on consensus safety, WebGL performance, and design systems.
+                  Subscribe to receive technical articles, case studies, and occasional project announcements.
                 </p>
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    const target = e.target as HTMLFormElement;
-                    const emailInput = target.elements.namedItem('news_email') as HTMLInputElement;
-                    if (!emailInput?.value) return;
-                    try {
-                      const res = await fetch('/api/newsletter/subscribe', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: emailInput.value }),
-                      });
-                      const r = await res.json();
-                      alert(r.message || 'Subscribed successfully!');
-                      target.reset();
-                    } catch {
-                      alert('Could not subscribe. Please try again.');
-                    }
-                  }}
-                  className="flex gap-2"
-                >
+                <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
                   <input
                     type="email"
-                    name="news_email"
-                    placeholder="you@company.com"
+                    value={newsletterEmail}
+                    onChange={(e) => setNewsletterEmail(e.target.value)}
+                    placeholder="name@example.com"
                     required
                     className="flex-1 px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
                   />
@@ -172,14 +177,19 @@ export const Contact: React.FC<ContactProps> = ({ contactEmail, socialLinks }) =
                     Subscribe
                   </button>
                 </form>
+                {newsletterStatus && (
+                  <div className={`text-xs ${newsletterStatus.success ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {newsletterStatus.message}
+                  </div>
+                )}
               </div>
 
-              {/* Social Channels */}
-              {socialLinks && socialLinks.length > 0 && (
+              {/* Social Channels (only if configured) */}
+              {enabledSocialLinks.length > 0 && (
                 <div className="pt-4 border-t border-slate-800/60 space-y-3">
-                  <div className="text-xs font-mono uppercase tracking-wider text-slate-500">Professional Networks</div>
+                  <div className="text-xs font-mono uppercase tracking-wider text-slate-500">Social & Profiles</div>
                   <div className="flex flex-col gap-2">
-                    {socialLinks.map((link) => (
+                    {enabledSocialLinks.map((link) => (
                       <a
                         key={link.id}
                         href={link.url}
@@ -200,133 +210,131 @@ export const Contact: React.FC<ContactProps> = ({ contactEmail, socialLinks }) =
             </div>
           </div>
 
-          {/* Right Column: Contact Form */}
+          {/* Right Column: Verified Contact Form */}
           <div className="lg:col-span-7">
-            <div className="p-6 sm:p-8 rounded-2xl border border-slate-800/80 bg-slate-900/50 shadow-xl relative">
-              {/* Success Notification */}
-              {status === 'success' && (
-                <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs sm:text-sm flex items-start gap-3 animate-in fade-in">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="font-semibold text-emerald-200">Message Sent Successfully</p>
-                    <p>{successMessage}</p>
+            <div className="p-8 rounded-2xl border border-slate-800/80 bg-slate-900/40 relative">
+              {status === 'success' ? (
+                <div className="py-12 text-center space-y-4">
+                  <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="w-6 h-6" />
                   </div>
+                  <h3 className="text-xl font-bold text-white tracking-tight">Message Received</h3>
+                  <p className="text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
+                    {successMessage}
+                  </p>
+                  <button
+                    onClick={() => setStatus('idle')}
+                    className="mt-4 px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Send Another Message
+                  </button>
                 </div>
-              )}
-
-              {/* Error Notification */}
-              {status === 'error' && (
-                <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs sm:text-sm flex items-start gap-3 animate-in fade-in">
-                  <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="font-semibold text-rose-200">Submission Error</p>
-                    <p>{errorMessage}</p>
-                  </div>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Honeypot Anti-spam (Hidden from visual users) */}
-                <input
-                  type="text"
-                  name="website_fax_hp"
-                  value={formData.website_fax_hp}
-                  onChange={handleChange}
-                  tabIndex={-1}
-                  autoComplete="off"
-                  className="hidden"
-                  aria-hidden="true"
-                />
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {/* Name field */}
-                  <div className="space-y-1.5">
-                    <label htmlFor="name" className="text-xs font-mono uppercase tracking-wider text-slate-400">
-                      Your Name <span className="text-indigo-400">*</span>
-                    </label>
-                    <input
-                      id="name"
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder="e.g. Alex Chen"
-                      required
-                      className="w-full px-4 py-2.5 text-sm bg-slate-950/80 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-                    />
-                  </div>
-
-                  {/* Email field */}
-                  <div className="space-y-1.5">
-                    <label htmlFor="email" className="text-xs font-mono uppercase tracking-wider text-slate-400">
-                      Your Email <span className="text-indigo-400">*</span>
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="alex@company.com"
-                      required
-                      className="w-full px-4 py-2.5 text-sm bg-slate-950/80 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-                    />
-                  </div>
-                </div>
-
-                {/* Subject field */}
-                <div className="space-y-1.5">
-                  <label htmlFor="subject" className="text-xs font-mono uppercase tracking-wider text-slate-400">
-                    Subject <span className="text-indigo-400">*</span>
-                  </label>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Honeypot anti-spam field */}
                   <input
-                    id="subject"
                     type="text"
-                    name="subject"
-                    value={formData.subject}
+                    name="website_fax_hp"
+                    value={formData.website_fax_hp}
                     onChange={handleChange}
-                    placeholder="Engineering Advisory or Project Collaboration"
-                    required
-                    className="w-full px-4 py-2.5 text-sm bg-slate-950/80 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    className="hidden"
+                    aria-hidden="true"
                   />
-                </div>
 
-                {/* Message field */}
-                <div className="space-y-1.5">
-                  <label htmlFor="message" className="text-xs font-mono uppercase tracking-wider text-slate-400">
-                    Message <span className="text-indigo-400">*</span>
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    rows={5}
-                    value={formData.message}
-                    onChange={handleChange}
-                    placeholder="Tell me about your technical objectives, timeline, or scope..."
-                    required
-                    className="w-full px-4 py-2.5 text-sm bg-slate-950/80 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors resize-y"
-                  />
-                </div>
-
-                {/* Submit button */}
-                <button
-                  type="submit"
-                  disabled={status === 'submitting'}
-                  className="w-full py-3 px-6 text-sm font-semibold text-slate-950 bg-white hover:bg-slate-200 disabled:bg-slate-700 disabled:text-slate-400 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                >
-                  {status === 'submitting' ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Transmitting Inquiry...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Transmit Message</span>
-                      <Send className="w-4 h-4" />
-                    </>
+                  {status === 'error' && errorMessage && (
+                    <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2.5">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                      <span>{errorMessage}</span>
+                    </div>
                   )}
-                </button>
-              </form>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label htmlFor="name" className="text-xs font-mono uppercase tracking-wider text-slate-400">
+                        Your Name <span className="text-indigo-400">*</span>
+                      </label>
+                      <input
+                        id="name"
+                        type="text"
+                        name="name"
+                        required
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="Alex Morgan"
+                        className="w-full px-4 py-2.5 text-sm bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="email" className="text-xs font-mono uppercase tracking-wider text-slate-400">
+                        Email Address <span className="text-indigo-400">*</span>
+                      </label>
+                      <input
+                        id="email"
+                        type="email"
+                        name="email"
+                        required
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="alex@company.com"
+                        className="w-full px-4 py-2.5 text-sm bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="subject" className="text-xs font-mono uppercase tracking-wider text-slate-400">
+                      Subject <span className="text-indigo-400">*</span>
+                    </label>
+                    <input
+                      id="subject"
+                      type="text"
+                      name="subject"
+                      required
+                      value={formData.subject}
+                      onChange={handleChange}
+                      placeholder="Project inquiry or collaboration"
+                      className="w-full px-4 py-2.5 text-sm bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="message" className="text-xs font-mono uppercase tracking-wider text-slate-400">
+                      Message <span className="text-indigo-400">*</span>
+                    </label>
+                    <textarea
+                      id="message"
+                      name="message"
+                      required
+                      rows={5}
+                      value={formData.message}
+                      onChange={handleChange}
+                      placeholder="Tell me about your project, timeline, or requirements..."
+                      className="w-full px-4 py-2.5 text-sm bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors resize-y min-h-[120px]"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={status === 'submitting'}
+                    className="w-full sm:w-auto px-8 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-950 bg-white hover:bg-slate-100 disabled:bg-slate-700 disabled:text-slate-400 rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-indigo-500/10"
+                  >
+                    {status === 'submitting' ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                        <span>Sending Message...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Send Message</span>
+                        <Send className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         </div>

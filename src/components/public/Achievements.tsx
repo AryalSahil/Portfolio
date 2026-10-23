@@ -8,7 +8,7 @@ interface AchievementsProps {
 
 export const Achievements: React.FC<AchievementsProps> = ({ achievements }) => {
   const publishedItems = (achievements || [])
-    .filter((a) => a.isPublished)
+    .filter((a) => a.isPublished !== false)
     .sort((a, b) => a.order - b.order);
 
   if (publishedItems.length === 0) return null;
@@ -30,10 +30,10 @@ export const Achievements: React.FC<AchievementsProps> = ({ achievements }) => {
             <span>Honors & Recognitions</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Key Industry Achievements & Patents
+            Key Honors & Achievements
           </h2>
           <p className="text-slate-400 text-sm sm:text-base max-w-2xl leading-relaxed">
-            Patents granted in distributed computing, open-source fellowship recognitions, and architectural excellence honors.
+            Notable awards, honors, and milestones recognized throughout my career.
           </p>
         </div>
 
@@ -48,38 +48,42 @@ export const Achievements: React.FC<AchievementsProps> = ({ achievements }) => {
                   <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
                     {getIcon(ach.badgeIcon)}
                   </div>
-                  <span className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                    <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                    <span>{ach.date}</span>
-                  </span>
+                  {ach.date && (
+                    <span className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
+                      <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                      <span>{ach.date}</span>
+                    </span>
+                  )}
                 </div>
 
                 <div>
                   <h3 className="text-lg font-bold text-white group-hover:text-indigo-300 transition-colors">
                     {ach.title}
                   </h3>
-                  <div className="text-xs font-mono text-indigo-400 pt-1">
-                    {ach.organization}
-                  </div>
+                  {ach.organization && (
+                    <div className="text-xs text-indigo-400 font-medium pt-0.5">
+                      {ach.organization}
+                    </div>
+                  )}
                 </div>
 
-                <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
-                  {ach.description}
-                </p>
+                {ach.description && (
+                  <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
+                    {ach.description}
+                  </p>
+                )}
               </div>
 
               {ach.url && (
-                <div className="pt-3 border-t border-slate-800/80">
-                  <a
-                    href={ach.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-white transition-colors font-mono"
-                  >
-                    <span>View Recognition</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                </div>
+                <a
+                  href={ach.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 font-medium pt-3 border-t border-slate-800"
+                >
+                  <span>Learn more</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               )}
             </div>
           ))}

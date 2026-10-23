@@ -7,7 +7,7 @@ interface GithubSectionProps {
 }
 
 export const GithubSection: React.FC<GithubSectionProps> = ({ activity }) => {
-  if (!activity || !activity.username) return null;
+  if (!activity || !activity.username || !activity.username.trim()) return null;
 
   return (
     <section id="github" className="py-24 border-t border-slate-800/80 relative overflow-hidden">
@@ -22,7 +22,7 @@ export const GithubSection: React.FC<GithubSectionProps> = ({ activity }) => {
               Developer Ecosystem & GitHub
             </h2>
             <p className="text-slate-400 text-sm sm:text-base max-w-2xl leading-relaxed">
-              Active open-source contributions across consensus algorithms, telemetry pipelines, and developer tooling.
+              Open-source repositories, developer contributions, and software projects.
             </p>
           </div>
 
@@ -41,31 +41,31 @@ export const GithubSection: React.FC<GithubSectionProps> = ({ activity }) => {
         {/* GitHub Stats Strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 rounded-2xl border border-slate-800 bg-[#0e1017]">
           <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">{activity.contributionsThisYear || 1842}</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">{activity.contributionsThisYear ?? 0}</div>
             <div className="text-xs text-slate-400 flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Commits & PRs (2026)</span>
+              <span>Contributions This Year</span>
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">{activity.totalRepos || 38}</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">{activity.totalRepos ?? 0}</div>
             <div className="text-xs text-slate-400 flex items-center gap-1.5">
               <Code2 className="w-3.5 h-3.5 text-indigo-400" />
               <span>Public Repositories</span>
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">{activity.followers || 492}</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">{activity.followers ?? 0}</div>
             <div className="text-xs text-slate-400 flex items-center gap-1.5">
               <Star className="w-3.5 h-3.5 text-amber-400" />
               <span>GitHub Followers</span>
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">{activity.publicGists || 14}</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">{activity.publicGists ?? 0}</div>
             <div className="text-xs text-slate-400 flex items-center gap-1.5">
               <GitFork className="w-3.5 h-3.5 text-sky-400" />
-              <span>Technical Gists</span>
+              <span>Public Gists</span>
             </div>
           </div>
         </div>
@@ -76,7 +76,6 @@ export const GithubSection: React.FC<GithubSectionProps> = ({ activity }) => {
             <div className="text-xs font-mono uppercase text-slate-400 tracking-wider">
               Language Frequency Distribution
             </div>
-            {/* Multi-segment bar */}
             <div className="h-3 w-full bg-slate-900 rounded-full overflow-hidden flex border border-slate-800">
               {activity.topLanguages.map((lang, i) => {
                 const colors = ['bg-indigo-500', 'bg-sky-400', 'bg-amber-400', 'bg-emerald-400'];
@@ -105,11 +104,11 @@ export const GithubSection: React.FC<GithubSectionProps> = ({ activity }) => {
           </div>
         )}
 
-        {/* Pinned Repositories */}
+        {/* Repositories */}
         {activity.recentRepos && activity.recentRepos.length > 0 && (
           <div className="space-y-4">
             <div className="text-xs font-mono uppercase text-slate-400 tracking-wider">
-              Featured Open-Source Projects
+              Featured Repositories
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {activity.recentRepos.map((repo, i) => (
@@ -119,36 +118,45 @@ export const GithubSection: React.FC<GithubSectionProps> = ({ activity }) => {
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className="font-bold text-white group-hover:text-indigo-400 transition-colors font-mono text-sm">
+                      <span className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors">
                         {repo.name}
-                      </div>
-                      <a
-                        href={repo.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-slate-500 hover:text-white transition-colors"
-                        title="View repository"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
+                      </span>
+                      {repo.language && (
+                        <span className="text-[11px] font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                          {repo.language}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-slate-400 text-xs leading-relaxed line-clamp-3">
-                      {repo.description}
-                    </p>
+                    {repo.description && (
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        {repo.description}
+                      </p>
+                    )}
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-slate-500 font-mono pt-3 border-t border-slate-800/80">
-                    <span className="text-indigo-400 font-semibold">{repo.language}</span>
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-800 text-xs text-slate-500 font-mono">
                     <div className="flex items-center gap-3">
                       <span className="flex items-center gap-1">
                         <Star className="w-3.5 h-3.5 text-amber-400" />
                         <span>{repo.stars}</span>
                       </span>
                       <span className="flex items-center gap-1">
-                        <GitFork className="w-3.5 h-3.5" />
+                        <GitFork className="w-3.5 h-3.5 text-slate-400" />
                         <span>{repo.forks}</span>
                       </span>
                     </div>
+
+                    {repo.url && (
+                      <a
+                        href={repo.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                      >
+                        <span>Code</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
                   </div>
                 </div>
               ))}

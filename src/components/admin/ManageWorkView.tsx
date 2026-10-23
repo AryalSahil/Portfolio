@@ -52,15 +52,15 @@ export const ManageWorkView: React.FC<ManageWorkViewProps> = ({ projects, onRefr
 
   const handleOpenNew = () => {
     setIsNew(true);
-    setTagsInput('TypeScript, React, Node.js');
+    setTagsInput('');
     setEditingProject({
       title: '',
       subtitle: '',
       slug: '',
       description: '',
       longDescription: '',
-      thumbnail: '/images/project_cloud_arch_1792149624510.jpg',
-      tags: ['TypeScript', 'React'],
+      thumbnail: '',
+      tags: [],
       liveUrl: '',
       githubUrl: '',
       isFeatured: false,
@@ -294,12 +294,16 @@ export const ManageWorkView: React.FC<ManageWorkViewProps> = ({ projects, onRefr
                   </div>
 
                   {/* Thumbnail */}
-                  <div className="w-20 h-14 sm:w-24 sm:h-16 rounded-lg overflow-hidden bg-slate-950 border border-slate-800 shrink-0">
-                    <img
-                      src={project.thumbnail}
-                      alt={project.title}
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-20 h-14 sm:w-24 sm:h-16 rounded-lg overflow-hidden bg-slate-950 border border-slate-800 shrink-0 flex items-center justify-center">
+                    {project.thumbnail ? (
+                      <img
+                        src={project.thumbnail}
+                        alt={project.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-[10px] font-mono text-slate-600">No Image</span>
+                    )}
                   </div>
 
                   {/* Details */}

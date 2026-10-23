@@ -11,7 +11,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({ posts }) => {
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
 
   const publishedPosts = (posts || [])
-    .filter((p) => p.isPublished)
+    .filter((p) => p.isPublished !== false)
     .sort((a, b) => a.order - b.order);
 
   if (publishedPosts.length === 0) return null;
@@ -22,13 +22,13 @@ export const BlogSection: React.FC<BlogSectionProps> = ({ posts }) => {
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-indigo-400 text-xs font-mono uppercase tracking-widest font-semibold">
             <BookOpen className="w-4 h-4" />
-            <span>Engineering Insights</span>
+            <span>Articles & Writing</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Articles & Technical Monographs
+            Articles & Technical Insights
           </h2>
           <p className="text-slate-400 text-sm sm:text-base max-w-2xl leading-relaxed">
-            Deep-dives into distributed consensus protocols, WebGL zero-copy pipelines, and architecture patterns.
+            Case studies, architectural deep-dives, and perspectives on engineering.
           </p>
         </div>
 
@@ -51,19 +51,25 @@ export const BlogSection: React.FC<BlogSectionProps> = ({ posts }) => {
                 )}
 
                 <div className="flex items-center gap-3 text-xs text-slate-500 font-mono">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>{new Date(post.publishedAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
-                  </span>
-                  <span>·</span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{post.readTimeMinutes} min</span>
-                  </span>
+                  {post.publishedAt && (
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>{new Date(post.publishedAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
+                    </span>
+                  )}
+                  {post.readTimeMinutes && (
+                    <>
+                      <span>·</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{post.readTimeMinutes} min read</span>
+                      </span>
+                    </>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-lg font-bold text-white group-hover:text-indigo-300 transition-colors tracking-tight leading-snug">
+                  <h3 className="text-lg font-bold text-white group-hover:text-indigo-300 transition-colors leading-snug">
                     {post.title}
                   </h3>
                   <p className="text-slate-400 text-xs sm:text-sm line-clamp-3 leading-relaxed">
@@ -72,16 +78,18 @@ export const BlogSection: React.FC<BlogSectionProps> = ({ posts }) => {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                <div className="flex flex-wrap gap-1.5">
-                  {(post.tags || []).slice(0, 2).map((t, i) => (
-                    <span key={i} className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400">
-                      {t}
-                    </span>
-                  ))}
-                </div>
+              <div className="pt-4 border-t border-slate-800 flex items-center justify-between text-xs">
+                {post.tags && post.tags.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {post.tags.slice(0, 2).map((t, idx) => (
+                      <span key={idx} className="font-mono text-[11px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                ) : <span />}
 
-                <span className="text-xs font-semibold text-indigo-400 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform font-mono">
+                <span className="text-indigo-400 font-medium group-hover:translate-x-1 transition-transform flex items-center gap-1">
                   <span>Read Article</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </span>
@@ -92,7 +100,10 @@ export const BlogSection: React.FC<BlogSectionProps> = ({ posts }) => {
       </div>
 
       {selectedPost && (
-        <BlogModal post={selectedPost} onClose={() => setSelectedPost(null)} />
+        <BlogModal
+          post={selectedPost}
+          onClose={() => setSelectedPost(null)}
+        />
       )}
     </section>
   );

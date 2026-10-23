@@ -128,7 +128,7 @@ export const ManageResumeView: React.FC<ManageResumeViewProps> = ({ resume, onSa
 
         <div className="p-5 rounded-xl border border-slate-800 bg-[#0e1017] space-y-1">
           <div className="text-xs font-bold text-white font-mono truncate" title={formData.fileName}>
-            {formData.fileName || 'elena_vance_cv_2026.pdf'}
+            {formData.fileName || 'No file uploaded'}
           </div>
           <div className="text-xs text-slate-400 flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5 text-emerald-400" />
@@ -138,7 +138,7 @@ export const ManageResumeView: React.FC<ManageResumeViewProps> = ({ resume, onSa
 
         <div className="p-5 rounded-xl border border-slate-800 bg-[#0e1017] space-y-1">
           <div className="text-xs font-bold text-white font-mono">
-            {formData.lastUpdated ? new Date(formData.lastUpdated).toLocaleDateString() : 'Recent'}
+            {formData.lastUpdated ? new Date(formData.lastUpdated).toLocaleDateString() : 'Never'}
           </div>
           <div className="text-xs text-slate-400 flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5 text-amber-400" />

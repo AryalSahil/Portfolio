@@ -22,10 +22,10 @@ export const EducationSection: React.FC<EducationSectionProps> = ({ education })
             <span>Academic Background</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Education & Research
+            Education & Academics
           </h2>
           <p className="text-slate-400 text-sm sm:text-base max-w-2xl leading-relaxed">
-            Foundational computer science research in distributed consensus, fault tolerance invariants, and human-computer interfaces.
+            Degrees, academic institutions, and educational foundations.
           </p>
         </div>
 
@@ -53,9 +53,11 @@ export const EducationSection: React.FC<EducationSectionProps> = ({ education })
                   </div>
                 </div>
 
-                <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
-                  {edu.description}
-                </p>
+                {edu.description && (
+                  <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
+                    {edu.description}
+                  </p>
+                )}
               </div>
             </div>
           ))}

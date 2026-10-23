@@ -22,7 +22,7 @@ export const ManageAboutView: React.FC<ManageAboutViewProps> = ({ initialData, o
 
   // Paragraphs
   const handleParagraphChange = (index: number, val: string) => {
-    const updated = [...formData.bioParagraphs];
+    const updated = [...(formData.bioParagraphs || [])];
     updated[index] = val;
     setFormData((prev) => ({ ...prev, bioParagraphs: updated }));
   };
@@ -30,14 +30,14 @@ export const ManageAboutView: React.FC<ManageAboutViewProps> = ({ initialData, o
   const handleAddParagraph = () => {
     setFormData((prev) => ({
       ...prev,
-      bioParagraphs: [...prev.bioParagraphs, 'New descriptive paragraph about engineering philosophy and experience.'],
+      bioParagraphs: [...(prev.bioParagraphs || []), ''],
     }));
   };
 
   const handleRemoveParagraph = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      bioParagraphs: prev.bioParagraphs.filter((_, i) => i !== index),
+      bioParagraphs: (prev.bioParagraphs || []).filter((_, i) => i !== index),
     }));
   };
 
@@ -45,10 +45,10 @@ export const ManageAboutView: React.FC<ManageAboutViewProps> = ({ initialData, o
   const handleAddEducation = () => {
     const newEdu: EducationItem = {
       id: `edu-${Date.now()}`,
-      degree: 'Degree or Specialization',
-      institution: 'University / Institute',
-      period: '2020 — 2024',
-      description: 'Focus area, achievements, and academic milestones.',
+      degree: '',
+      institution: '',
+      period: '',
+      description: '',
       order: (formData.education?.length || 0) + 1,
       isPublished: true,
     };
@@ -72,8 +72,8 @@ export const ManageAboutView: React.FC<ManageAboutViewProps> = ({ initialData, o
   const handleAddGoal = () => {
     const newGoal: CareerGoalItem = {
       id: `cg-${Date.now()}`,
-      goal: 'Strategic career milestone or research objective',
-      timeframe: '2026-2027',
+      goal: '',
+      timeframe: '',
       isCompleted: false,
     };
     setFormData((prev) => ({ ...prev, careerGoals: [...(prev.careerGoals || []), newGoal] }));

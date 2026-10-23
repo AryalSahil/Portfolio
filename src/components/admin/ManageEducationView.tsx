@@ -26,7 +26,7 @@ export const ManageEducationView: React.FC<ManageEducationViewProps> = ({ educat
     setEditingItem({
       degree: '',
       institution: '',
-      period: '2020 — 2024',
+      period: '',
       description: '',
       isPublished: true,
     });

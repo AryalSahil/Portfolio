@@ -26,7 +26,7 @@ export const ManageHomeView: React.FC<ManageHomeViewProps> = ({ initialData, onS
   };
 
   const handleStatChange = (index: number, field: string, value: string) => {
-    const newStats = [...formData.stats];
+    const newStats = [...(formData.stats || [])];
     newStats[index] = { ...newStats[index], [field]: value };
     setFormData((prev) => ({ ...prev, stats: newStats }));
   };
@@ -34,14 +34,14 @@ export const ManageHomeView: React.FC<ManageHomeViewProps> = ({ initialData, onS
   const handleAddStat = () => {
     setFormData((prev) => ({
       ...prev,
-      stats: [...prev.stats, { label: 'New Metric', value: '100+', subtext: 'Benchmark description' }],
+      stats: [...(prev.stats || []), { label: '', value: '', subtext: '' }],
     }));
   };
 
   const handleRemoveStat = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      stats: prev.stats.filter((_, i) => i !== index),
+      stats: (prev.stats || []).filter((_, i) => i !== index),
     }));
   };
 

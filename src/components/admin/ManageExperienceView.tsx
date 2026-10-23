@@ -28,8 +28,8 @@ export const ManageExperienceView: React.FC<ManageExperienceViewProps> = ({ expe
     setEditingItem({
       company: '',
       role: '',
-      location: 'San Francisco, CA (Remote)',
-      period: '2024 — Present',
+      location: '',
+      period: '',
       description: '',
       achievements: [],
       isCurrent: true,

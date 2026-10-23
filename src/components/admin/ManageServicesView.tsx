@@ -28,7 +28,7 @@ export const ManageServicesView: React.FC<ManageServicesViewProps> = ({ services
     setEditingItem({
       title: '',
       description: '',
-      pricing: 'Project Based',
+      pricing: '',
       deliverables: [],
       isPublished: true,
     });
